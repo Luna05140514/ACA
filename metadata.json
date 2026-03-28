@@ -1,0 +1,5 @@
+{
+  "name": "雙眼視覺分析",
+  "description": "專業的雙眼視覺功能檢查數據輸入介面，包含融像範圍、眼位測量及調節功能分析。",
+  "requestFramePermissions": []
+}
