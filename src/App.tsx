@@ -37,7 +37,7 @@ const initialPrismData = (): PrismData => ({
   recovery: '',
 });
 
-const initialData: VisionData = {
+const getInitialData = (): VisionData => ({
   distance: {
     phoriaValue: '',
     phoriaType: 'ortho',
@@ -54,7 +54,7 @@ const initialData: VisionData = {
     nra: '',
     pra: '',
   },
-};
+});
 
 // Analysis Logic
 const parseValue = (val: string) => {
@@ -79,48 +79,185 @@ const calculateAnalysis = (data: VisionData, section: 'distance' | 'near') => {
     recovery: parseValue(data[section].bo.recovery),
   };
 
-  // Sheard's Criterion: Reserve >= 2 * Demand
-  // Demand = Phoria, Reserve = Opposing range (Exo -> BO, Eso -> BI)
-  let sheardResult = { met: true, message: '符合標準', prism: 0 };
-  if (phoria.type !== 'ortho') {
-    const demand = phoria.value;
-    const reserve = phoria.type === 'exo' ? (bo.blur || bo.break) : (bi.blur || bi.break);
-    if (reserve < 2 * demand) {
-      sheardResult.met = false;
-      const needed = (2 * demand - reserve) / 3;
-      sheardResult.prism = Math.max(0, parseFloat(needed.toFixed(1)));
-      sheardResult.message = `不符合 (需 ${sheardResult.prism}Δ ${phoria.type === 'exo' ? 'BO' : 'BI'})`;
+  // AC/A Ratio (Gradient Method) - Always calculate from near data if available
+  let acaResult = null;
+  let acaValue = 0;
+  if (data.near.phoriaValue !== '' && data.near.phoriaPlus1Value !== '') {
+    const p1 = parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1);
+    const p2 = parseValue(data.near.phoriaPlus1Value) * (data.near.phoriaPlus1Type === 'eso' ? 1 : -1);
+    acaValue = Math.abs(p1 - p2);
+    if (section === 'near') {
+      const formattedAca = acaValue % 1 === 0 ? acaValue.toString() : acaValue.toFixed(1);
+      acaResult = {
+        value: formattedAca,
+        message: formattedAca,
+        status: acaValue >= 3 && acaValue <= 5 ? '正常' : acaValue < 3 ? '偏低' : '偏高'
+      };
     }
   }
 
+  // Sheard's Criterion: Reserve >= 2 * Demand
+  // Demand = Phoria, Reserve = Opposing range (Exo -> BO, Eso -> BI)
+  let sheardResult = { met: true, message: '符合標準', prism: 0, applicable: phoria.type === 'exo' };
+  if (phoria.type === 'exo') {
+    const demand = phoria.value;
+    const reserve = bo.blur || bo.break;
+    if (reserve < 2 * demand) {
+      sheardResult.met = false;
+      const needed = (2 * demand - reserve) / 3;
+      sheardResult.prism = Math.max(0, parseFloat(needed.toFixed(2)));
+      sheardResult.message = `不符合 (需 ${sheardResult.prism}Δ BI)`;
+    }
+    if (acaValue > 0 && sheardResult.prism > 0) {
+      const acaCorrection = (-sheardResult.prism / acaValue).toFixed(2);
+      sheardResult.message += ` (加入 ${acaCorrection}D)`;
+    }
+  } else {
+    sheardResult.message = '不適用 (非外斜)';
+  }
+
   // 1:1 Rule (Usually for Esophoria): Recovery >= Demand
-  let oneToOneResult = { met: true, message: '符合標準', prism: 0 };
+  let oneToOneResult = { met: true, message: '符合標準', prism: 0, applicable: phoria.type === 'eso' };
   if (phoria.type === 'eso') {
     const demand = phoria.value;
     const recovery = bi.recovery;
     if (recovery < demand) {
       oneToOneResult.met = false;
       const needed = (demand - recovery) / 2;
-      oneToOneResult.prism = Math.max(0, parseFloat(needed.toFixed(1)));
-      oneToOneResult.message = `不符合 (需 ${oneToOneResult.prism}Δ BI)`;
+      oneToOneResult.prism = Math.max(0, parseFloat(needed.toFixed(2)));
+      oneToOneResult.message = `不符合 (需 ${oneToOneResult.prism}Δ BO)`;
+    }
+    if (acaValue > 0 && oneToOneResult.prism > 0) {
+      const acaCorrection = (oneToOneResult.prism / acaValue).toFixed(2);
+      oneToOneResult.message += ` (加入 ${acaCorrection}D)`;
     }
   } else {
     oneToOneResult.message = '不適用 (非內斜)';
   }
 
   // Percival's Criterion: Lesser Range >= 1/2 Greater Range (or G <= 2L)
-  // Based on break values
-  const G = Math.max(bi.break, bo.break);
-  const L = Math.min(bi.break, bo.break);
+  // Use blur point if available, otherwise use break point
+  const valBI = bi.blur > 0 ? bi.blur : bi.break;
+  const valBO = bo.blur > 0 ? bo.blur : bo.break;
+  const G = Math.max(valBI, valBO);
+  const L = Math.min(valBI, valBO);
+  const greaterType = valBI > valBO ? 'BI' : 'BO';
   let percivalResult = { met: true, message: '符合標準', prism: 0 };
   if (G > 2 * L) {
     percivalResult.met = false;
     const needed = (G - 2 * L) / 3;
-    percivalResult.prism = Math.max(0, parseFloat(needed.toFixed(1)));
-    percivalResult.message = `不符合 (需 ${percivalResult.prism}Δ 稜鏡)`;
+    percivalResult.prism = Math.max(0, parseFloat(needed.toFixed(2)));
+    percivalResult.message = `不符合 (需 ${percivalResult.prism}Δ ${greaterType})`;
   }
 
-  return { sheard: sheardResult, oneToOne: oneToOneResult, percival: percivalResult };
+  return { sheard: sheardResult, oneToOne: oneToOneResult, percival: percivalResult, aca: acaResult };
+};
+
+const calculateDysfunctionType = (data: VisionData) => {
+  const distRaw = parseValue(data.distance.phoriaValue);
+  const nearRaw = parseValue(data.near.phoriaValue);
+  const distType = data.distance.phoriaType;
+  const nearType = data.near.phoriaType;
+  
+  // Signed values for difference calculation
+  const distSigned = distRaw * (distType === 'eso' ? 1 : -1);
+  const nearSigned = nearRaw * (nearType === 'eso' ? 1 : -1);
+  
+  // AC/A calculation (Gradient)
+  let aca = 0;
+  let hasAca = false;
+  if (data.near.phoriaValue !== '' && data.near.phoriaPlus1Value !== '') {
+    const p1 = parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1);
+    const p2 = parseValue(data.near.phoriaPlus1Value) * (data.near.phoriaPlus1Type === 'eso' ? 1 : -1);
+    aca = Math.abs(p1 - p2);
+    hasAca = true;
+  }
+
+  const threshold = 3;
+
+  // Standard Norms for Phoria
+  // Distance: 1Δ Eso to 3Δ Exo
+  const isDistNormal = (distType === 'eso' && distRaw <= 1) || (distType === 'exo' && distRaw <= 3);
+  // Near: 0 to 6Δ Exo
+  const isNearNormal = (nearType === 'eso' && nearRaw === 0) || (nearType === 'exo' && nearRaw <= 6);
+
+  if (hasAca) {
+    // CI: Near Exo, Near Value > Distance Value, Distance Normal, AC/A < 3
+    if (nearType === 'exo' && nearRaw > distRaw && isDistNormal && aca < 3) {
+      return { type: '內聚不足 (Convergence Insufficiency, CI)', desc: '近方外斜程度大於遠方，且遠方在標準值內，伴隨低 AC/A。' };
+    }
+    // CE: Near Eso, Near Value > Distance Value, Distance Normal, AC/A > 5
+    if (nearType === 'eso' && nearRaw > distRaw && isDistNormal && aca > 5) {
+      return { type: '內聚過度 (Convergence Excess, CE)', desc: '近方內斜程度大於遠方，且遠方在標準值內，伴隨高 AC/A。' };
+    }
+    // DI: Distance Eso, Distance Value > Near Value, Near Normal, AC/A < 3
+    if (distType === 'eso' && distRaw > nearRaw && isNearNormal && aca < 3) {
+      return { type: '開散不足 (Divergence Insufficiency, DI)', desc: '遠方內斜程度大於近方，且近方在標準值內，伴隨低 AC/A。' };
+    }
+    // DE: Distance Exo, Distance Value > Near Value, Near Normal, AC/A > 5
+    if (distType === 'exo' && distRaw > nearRaw && isNearNormal && aca > 5) {
+      return { type: '開散過度 (Divergence Excess, DE)', desc: '遠方外斜程度大於近方，且近方在標準值內，伴隨高 AC/A。' };
+    }
+  }
+
+  // Basic types: Distance and Near are similar (within threshold)
+  if (Math.abs(nearSigned - distSigned) <= threshold) {
+    if (distType === 'eso' && nearType === 'eso') {
+      return { type: '基本型內斜 (Basic Esophoria)', desc: '遠近方的內斜程度接近，雙眼視覺狀態相對穩定。' };
+    }
+    if (distType === 'exo' && nearType === 'exo') {
+      return { type: '基本型外斜 (Basic Exophoria)', desc: '遠近方的外斜程度接近，雙眼視覺狀態相對穩定。' };
+    }
+  }
+
+  // Fallbacks if criteria not strictly met or AC/A missing
+  if (nearRaw > distRaw) {
+    if (nearType === 'eso') return { type: '內聚過度傾向', desc: '近方內斜量較大，建議確認 AC/A 以區分 CE 或 DI。' };
+    if (nearType === 'exo') return { type: '內聚不足傾向', desc: '近方外斜量較大，建議確認 AC/A 以區分 CI 或 DE。' };
+  } else if (distRaw > nearRaw) {
+    if (distType === 'eso') return { type: '開散不足傾向', desc: '遠方內斜量較大，建議確認 AC/A 以區分 CE 或 DI。' };
+    if (distType === 'exo') return { type: '開散過度傾向', desc: '遠方外斜量較大，建議確認 AC/A 以區分 CI 或 DE。' };
+  }
+
+  return { type: '正常雙眼視覺狀態', desc: '遠近方斜位量在正常範圍內且程度接近。' };
+};
+
+const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
+  const hasMinData = data.distance.phoriaValue && data.near.phoriaValue;
+  if (!hasMinData) return null;
+
+  const result = calculateDysfunctionType(data);
+
+  return (
+    <div className="mt-12 p-6 bg-blue-600 rounded-2xl shadow-xl text-white">
+      <div className="flex items-center gap-3 mb-4">
+        <Activity size={24} className="text-blue-200" />
+        <h3 className="text-xl font-bold">綜合聚散功能分析</h3>
+      </div>
+      <div className="bg-white/10 rounded-xl p-5 backdrop-blur-sm border border-white/20">
+        <div className="text-sm font-medium text-blue-100 mb-1 uppercase tracking-wider">初步判定類型</div>
+        <div className="text-2xl font-black mb-3 tracking-tight">{result.type}</div>
+        <div className="text-sm text-blue-50 opacity-90 leading-relaxed">
+          {result.desc}
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">遠近斜位差</div>
+          <div className="text-lg font-mono font-bold">
+            {Math.abs(parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1) - 
+             parseValue(data.distance.phoriaValue) * (data.distance.phoriaType === 'eso' ? 1 : -1)).toFixed(1)}Δ
+          </div>
+        </div>
+        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">AC/A 狀態</div>
+          <div className="text-lg font-bold">
+            {data.near.phoriaPlus1Value ? '已輸入' : '未輸入'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const AnalysisCard = ({ data, section }: { data: VisionData, section: 'distance' | 'near' }) => {
@@ -136,24 +273,42 @@ const AnalysisCard = ({ data, section }: { data: VisionData, section: 'distance'
         自動分析結果 ({section === 'distance' ? '遠' : '近'})
       </h4>
       <div className="grid grid-cols-1 gap-3">
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-gray-500 font-medium">Sheard's 準則</span>
-          <span className={`font-bold ${results.sheard.met ? 'text-green-600' : 'text-red-600'}`}>
-            {results.sheard.message}
-          </span>
-        </div>
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-gray-500 font-medium">1:1 法則</span>
-          <span className={`font-bold ${results.oneToOne.met ? 'text-green-600' : 'text-gray-400'}`}>
-            {results.oneToOne.message}
-          </span>
-        </div>
+        {results.sheard.applicable && (
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500 font-medium">Sheard's 準則 (外斜)</span>
+            <span className={`font-bold ${results.sheard.met ? 'text-green-600' : 'text-red-600'}`}>
+              {results.sheard.message}
+            </span>
+          </div>
+        )}
+        {results.oneToOne.applicable && (
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500 font-medium">1:1 法則 (內斜)</span>
+            <span className={`font-bold ${results.oneToOne.met ? 'text-green-600' : 'text-red-600'}`}>
+              {results.oneToOne.message}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between items-center text-xs">
           <span className="text-gray-500 font-medium">Percival's 準則</span>
           <span className={`font-bold ${results.percival.met ? 'text-green-600' : 'text-red-600'}`}>
             {results.percival.message}
           </span>
         </div>
+
+        {results.aca && (
+          <div className="flex justify-between items-center text-xs pt-2 border-t border-gray-100 mt-1">
+            <span className="text-gray-500 font-bold">AC/A 比值 (Gradient)</span>
+            <div className="flex items-center gap-2">
+              <span className={`font-bold ${results.aca.status === '正常' ? 'text-blue-600' : 'text-orange-600'}`}>
+                {results.aca.status}
+              </span>
+              <span className="text-gray-900 font-mono font-bold bg-white px-2 py-0.5 rounded border border-gray-200 shadow-sm">
+                {results.aca.message}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -217,7 +372,7 @@ const PrismInputGroup = ({
 );
 
 export default function App() {
-  const [data, setData] = useState<VisionData>(initialData);
+  const [data, setData] = useState<VisionData>(getInitialData());
 
   const handleInputChange = (
     section: 'distance' | 'near',
@@ -226,14 +381,22 @@ export default function App() {
     subField?: keyof PrismData
   ) => {
     setData((prev) => {
-      const newData = { ...prev };
+      const newData = { 
+        ...prev,
+        [section]: {
+          ...prev[section]
+        }
+      };
+      
       if (subField && (field === 'bi' || field === 'bo')) {
+        // @ts-ignore
         newData[section][field] = {
-          ...newData[section][field],
+          // @ts-ignore
+          ...prev[section][field],
           [subField]: value,
         };
       } else {
-        // @ts-ignore - dynamic key access
+        // @ts-ignore
         newData[section][field] = value;
 
         // Auto-switch phoria type based on value
@@ -243,9 +406,9 @@ export default function App() {
           if (num === 0) {
             // @ts-ignore
             newData[section][typeField] = 'ortho';
-          } else if (newData[section][typeField] === 'ortho' && value !== '') {
+          } else if (prev[section][typeField] === 'ortho' && value !== '') {
             // @ts-ignore
-            newData[section][typeField] = 'exo'; // Default to BI if non-zero
+            newData[section][typeField] = 'exo'; 
           }
         }
       }
@@ -254,14 +417,7 @@ export default function App() {
   };
 
   const handleReset = () => {
-    if (window.confirm('確定要清除所有輸入的數據嗎？')) {
-      setData(initialData);
-    }
-  };
-
-  const handleSave = () => {
-    console.log('Saving data:', data);
-    alert('數據已儲存（模擬）');
+    setData(getInitialData());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentId: string) => {
@@ -511,6 +667,8 @@ export default function App() {
 
               <AnalysisCard data={data} section="near" />
 
+              <ComprehensiveAnalysis data={data} />
+
               {/* Accommodation */}
               <div className="pt-6 border-t border-gray-100">
                 <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
@@ -553,29 +711,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={handleSave}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-12 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200"
-          >
-            <Save size={20} />
-            儲存分析結果
-          </button>
-        </div>
-
-        {/* Footer Info */}
-        <div className="mt-12 flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 text-sm">
-          <Info className="shrink-0 mt-0.5" size={18} />
-          <div>
-            <p className="font-bold mb-1">使用說明：</p>
-            <ul className="list-disc list-inside space-y-1 opacity-90">
-              <li>所有數值欄位均可手動輸入，支援正負號。</li>
-              <li>融像範圍請依序輸入「模糊 / 破裂 / 恢復」數值。</li>
-              <li>調節功能單位為屈光度 (D)，稜鏡單位為稜鏡度 (Δ)。</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );
