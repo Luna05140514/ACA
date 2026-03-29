@@ -13,6 +13,10 @@ interface PrismData {
 }
 
 interface VisionData {
+  age: string;
+  fcc: string;
+  aa: string;
+  blurPoint: string;
   distance: {
     phoriaValue: string;
     phoriaType: 'exo' | 'eso' | 'ortho';
@@ -38,6 +42,10 @@ const initialPrismData = (): PrismData => ({
 });
 
 const getInitialData = (): VisionData => ({
+  age: '',
+  fcc: '',
+  aa: '',
+  blurPoint: '',
   distance: {
     phoriaValue: '',
     phoriaType: 'ortho',
@@ -158,68 +166,109 @@ const calculateDysfunctionType = (data: VisionData) => {
   const nearRaw = parseValue(data.near.phoriaValue);
   const distType = data.distance.phoriaType;
   const nearType = data.near.phoriaType;
-  
-  // Signed values for difference calculation
-  const distSigned = distRaw * (distType === 'eso' ? 1 : -1);
-  const nearSigned = nearRaw * (nearType === 'eso' ? 1 : -1);
-  
+  const age = parseValue(data.age);
+  const aa = parseValue(data.aa);
+  const nra = parseValue(data.near.nra);
+  const pra = parseValue(data.near.pra);
+  const fcc = parseValue(data.fcc);
+
   // AC/A calculation (Gradient)
   let aca = 0;
-  let hasAca = false;
   if (data.near.phoriaValue !== '' && data.near.phoriaPlus1Value !== '') {
     const p1 = parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1);
     const p2 = parseValue(data.near.phoriaPlus1Value) * (data.near.phoriaPlus1Type === 'eso' ? 1 : -1);
     aca = Math.abs(p1 - p2);
-    hasAca = true;
   }
 
-  const threshold = 3;
+  // Norms
+  const isDistNormal = (distType === 'eso' && distRaw <= 1) || (distType === 'exo' && distRaw <= 3) || distType === 'ortho';
+  const isNearNormal = (nearType === 'ortho') || (nearType === 'exo' && nearRaw <= 6);
 
-  // Standard Norms for Phoria
-  // Distance: 1Δ Eso to 3Δ Exo
-  const isDistNormal = (distType === 'eso' && distRaw <= 1) || (distType === 'exo' && distRaw <= 3);
-  // Near: 0 to 6Δ Exo
-  const isNearNormal = (nearType === 'eso' && nearRaw === 0) || (nearType === 'exo' && nearRaw <= 6);
+  // AA Norms
+  const minAA = 15 - age / 4;
+  const maxAA = 25 - 0.4 * age;
+  let aaStatus: 'Normal' | 'Low' | 'High' = 'Normal';
+  if (aa > 0) {
+    if (aa < minAA) aaStatus = 'Low';
+    else if (aa > maxAA) aaStatus = 'High';
+  }
 
-  if (hasAca) {
-    // CI: Near Exo, Near Value > Distance Value, Distance Normal, AC/A < 3
-    if (nearType === 'exo' && nearRaw > distRaw && isDistNormal && aca < 3) {
-      return { type: '內聚不足 (Convergence Insufficiency, CI)', desc: '近方外斜程度大於遠方，且遠方在標準值內，伴隨低 AC/A。' };
+  let type = "";
+  let desc = "";
+
+  if (isDistNormal && isNearNormal) {
+    type = "正常 (Normal)";
+    desc = "遠方與近方斜位均在臨床標準範圍內。";
+  } else if (!isDistNormal && isNearNormal) {
+    if (distType === 'exo') {
+      type = "開散過度 (Divergence Excess)";
+      desc = "遠方外斜視超出標準，近方正常。";
+    } else if (distType === 'eso') {
+      type = "開散不足 (Divergence Insufficiency)";
+      desc = "遠方內斜視超出標準，近方正常。";
     }
-    // CE: Near Eso, Near Value > Distance Value, Distance Normal, AC/A > 5
-    if (nearType === 'eso' && nearRaw > distRaw && isDistNormal && aca > 5) {
-      return { type: '內聚過度 (Convergence Excess, CE)', desc: '近方內斜程度大於遠方，且遠方在標準值內，伴隨高 AC/A。' };
+  } else if (isDistNormal && !isNearNormal) {
+    if (nearType === 'eso') {
+      if (aaStatus === 'Normal') {
+        type = "集合過度 (Convergence Excess)";
+        desc = "近方內斜視，調節幅度正常。";
+      } else if (aaStatus === 'Low') {
+        type = "調節不足導致動用更多集合代償";
+        desc = "近方內斜視，調節幅度偏低，導致動用更多調節性集合。";
+      } else if (aaStatus === 'High') {
+        type = "調節過度(主因)伴隨更多的調節集合";
+        desc = "近方內斜視，調節幅度偏高。";
+      }
+    } else if (nearType === 'exo') {
+      if (aaStatus === 'Normal') {
+        type = "集合不足 (Convergence Insufficiency)";
+        desc = "近方外斜視，調節幅度正常。";
+      } else if (aaStatus === 'High') {
+        type = "集合不足(主因)導致調節過度";
+        desc = "近方外斜視，調節幅度偏高。";
+      } else if (aaStatus === 'Low') {
+        type = "假性集合不足(調節不足)";
+        desc = "近方外斜視，調節幅度偏低。";
+      }
     }
-    // DI: Distance Eso, Distance Value > Near Value, Near Normal, AC/A < 3
-    if (distType === 'eso' && distRaw > nearRaw && isNearNormal && aca < 3) {
-      return { type: '開散不足 (Divergence Insufficiency, DI)', desc: '遠方內斜程度大於近方，且近方在標準值內，伴隨低 AC/A。' };
-    }
-    // DE: Distance Exo, Distance Value > Near Value, Near Normal, AC/A > 5
-    if (distType === 'exo' && distRaw > nearRaw && isNearNormal && aca > 5) {
-      return { type: '開散過度 (Divergence Excess, DE)', desc: '遠方外斜程度大於近方，且近方在標準值內，伴隨高 AC/A。' };
+  } else {
+    // Both Abnormal
+    const distSigned = distRaw * (distType === 'eso' ? 1 : -1);
+    const nearSigned = nearRaw * (nearType === 'eso' ? 1 : -1);
+    const diff = Math.abs(distSigned - nearSigned);
+
+    if (distType === 'exo' && nearType === 'exo' && diff <= 4) {
+      type = "單純外斜視 (Basic Exophoria)";
+      desc = "遠近方均為外斜視且差異在 4Δ 以內。";
+    } else if (distType === 'eso' && nearType === 'eso' && diff <= 4) {
+      type = "單純內斜視 (Basic Esophoria)";
+      desc = "遠近方均為內斜視且差異在 4Δ 以內。";
+    } else if (distType === 'exo' && nearType === 'eso' && (aca > 5 || aaStatus === 'High')) {
+      type = "開散過度 + 調節過度";
+      desc = "遠方外斜且近方內斜，伴隨高 AC/A 或高調節幅度。";
+    } else if (distType === 'eso' && nearType === 'exo') {
+      type = "重新確認斜位";
+      desc = "遠方內斜且近方外斜，此情況較少見，建議重新測量。";
+    } else {
+      type = "複合型視功能異常";
+      desc = "遠近方斜位均不正常，且不符合單純型分類。";
     }
   }
 
-  // Basic types: Distance and Near are similar (within threshold)
-  if (Math.abs(nearSigned - distSigned) <= threshold) {
-    if (distType === 'eso' && nearType === 'eso') {
-      return { type: '基本型內斜 (Basic Esophoria)', desc: '遠近方的內斜程度接近，雙眼視覺狀態相對穩定。' };
-    }
-    if (distType === 'exo' && nearType === 'exo') {
-      return { type: '基本型外斜 (Basic Exophoria)', desc: '遠近方的外斜程度接近，雙眼視覺狀態相對穩定。' };
-    }
+  // Accommodation Status
+  let accDiagnosis = "正常";
+  const isPRALow = pra !== 0 && Math.abs(pra) < 2.25;
+  const isNRALow = nra !== 0 && nra < 2.00;
+  const isFCCLow = data.fcc !== '' && fcc <= 0.25;
+  const isFCCNegative = data.fcc !== '' && fcc < 0;
+
+  if (aaStatus === 'Low' || isPRALow || isFCCLow) {
+    accDiagnosis = "調節不足 (Accommodative Insufficiency)";
+  } else if (aaStatus === 'High' || isNRALow || isFCCNegative) {
+    accDiagnosis = "調節過度 (Accommodative Excess)";
   }
 
-  // Fallbacks if criteria not strictly met or AC/A missing
-  if (nearRaw > distRaw) {
-    if (nearType === 'eso') return { type: '內聚過度傾向', desc: '近方內斜量較大，建議確認 AC/A 以區分 CE 或 DI。' };
-    if (nearType === 'exo') return { type: '內聚不足傾向', desc: '近方外斜量較大，建議確認 AC/A 以區分 CI 或 DE。' };
-  } else if (distRaw > nearRaw) {
-    if (distType === 'eso') return { type: '開散不足傾向', desc: '遠方內斜量較大，建議確認 AC/A 以區分 CE 或 DI。' };
-    if (distType === 'exo') return { type: '開散過度傾向', desc: '遠方外斜量較大，建議確認 AC/A 以區分 CI 或 DE。' };
-  }
-
-  return { type: '正常雙眼視覺狀態', desc: '遠近方斜位量在正常範圍內且程度接近。' };
+  return { type, desc, accDiagnosis, aaStatus, minAA, maxAA };
 };
 
 const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
@@ -229,30 +278,77 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
   const result = calculateDysfunctionType(data);
 
   return (
-    <div className="mt-12 p-6 bg-blue-600 rounded-2xl shadow-xl text-white">
-      <div className="flex items-center gap-3 mb-4">
-        <Activity size={24} className="text-blue-200" />
-        <h3 className="text-xl font-bold">綜合聚散功能分析</h3>
+    <div className="mt-12 p-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-2xl text-white">
+      <div className="flex items-center gap-3 mb-6">
+        <Activity size={28} className="text-blue-200" />
+        <h3 className="text-2xl font-black tracking-tight">綜合視功能分析報告</h3>
       </div>
-      <div className="bg-white/10 rounded-xl p-5 backdrop-blur-sm border border-white/20">
-        <div className="text-sm font-medium text-blue-100 mb-1 uppercase tracking-wider">初步判定類型</div>
-        <div className="text-2xl font-black mb-3 tracking-tight">{result.type}</div>
-        <div className="text-sm text-blue-50 opacity-90 leading-relaxed">
-          {result.desc}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Primary Diagnosis */}
+        <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-inner">
+          <div className="text-xs font-bold text-blue-200 mb-2 uppercase tracking-widest">聚散功能判定</div>
+          <div className="text-2xl font-black mb-3 leading-tight">{result.type}</div>
+          <p className="text-sm text-blue-50 leading-relaxed opacity-90">
+            {result.desc}
+          </p>
+        </div>
+
+        {/* Accommodation Diagnosis */}
+        <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-inner">
+          <div className="text-xs font-bold text-blue-200 mb-2 uppercase tracking-widest">調節功能判定</div>
+          <div className="text-2xl font-black mb-3 leading-tight">{result.accDiagnosis}</div>
+          {data.age && (
+            <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
+              <div className="flex justify-between text-[10px] font-bold text-blue-200 uppercase tracking-wider">
+                <span>調節幅度 (AA) 參考值</span>
+                <span className={`px-1.5 py-0.5 rounded ${result.aaStatus === 'Low' ? 'bg-red-500/40' : result.aaStatus === 'High' ? 'bg-orange-500/40' : 'bg-green-500/40'}`}>
+                  {result.aaStatus === 'Low' ? '偏低' : result.aaStatus === 'High' ? '偏高' : '正常'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-white/5 rounded p-1.5">
+                  <div className="text-[9px] opacity-60">最小值</div>
+                  <div className="text-xs font-mono font-bold">{result.minAA.toFixed(1)}</div>
+                </div>
+                <div className="bg-white/5 rounded p-1.5">
+                  <div className="text-[9px] opacity-60">平均值</div>
+                  <div className="text-xs font-mono font-bold">{(18.7 - 0.3 * parseValue(data.age)).toFixed(1)}</div>
+                </div>
+                <div className="bg-white/5 rounded p-1.5">
+                  <div className="text-[9px] opacity-60">最大值</div>
+                  <div className="text-xs font-mono font-bold">{result.maxAA.toFixed(1)}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
           <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">遠近斜位差</div>
-          <div className="text-lg font-mono font-bold">
+          <div className="text-xl font-mono font-black">
             {Math.abs(parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1) - 
              parseValue(data.distance.phoriaValue) * (data.distance.phoriaType === 'eso' ? 1 : -1)).toFixed(1)}Δ
           </div>
         </div>
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">AC/A 狀態</div>
-          <div className="text-lg font-bold">
-            {data.near.phoriaPlus1Value ? '已輸入' : '未輸入'}
+        <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">AC/A 比值</div>
+          <div className="text-xl font-mono font-black">
+            {data.near.phoriaPlus1Value ? calculateAnalysis(data, 'near').aca?.value || '-' : '-'}
+          </div>
+        </div>
+        <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">NRA/PRA</div>
+          <div className="text-sm font-mono font-bold">
+            {data.near.nra || '-'}/{data.near.pra || '-'}
+          </div>
+        </div>
+        <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">FCC 狀態</div>
+          <div className="text-xl font-mono font-black">
+            {data.fcc || '-'}
           </div>
         </div>
       </div>
@@ -314,15 +410,17 @@ const AnalysisCard = ({ data, section }: { data: VisionData, section: 'distance'
   );
 };
 
-const SectionHeader = ({ icon: Icon, title, subtitle, children }: { icon: any, title: string, subtitle: string, children?: React.ReactNode }) => (
+const SectionHeader = ({ icon: Icon, title, subtitle, children, hideIcon }: { icon: any, title: string, subtitle: string, children?: React.ReactNode, hideIcon?: boolean }) => (
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
     <div className="flex items-center gap-3">
-      <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-        <Icon size={24} />
-      </div>
+      {!hideIcon && (
+        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+          <Icon size={24} />
+        </div>
+      )}
       <div>
         <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-        <p className="text-sm text-gray-500">{subtitle}</p>
+        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
       </div>
     </div>
     {children}
@@ -373,14 +471,42 @@ const PrismInputGroup = ({
 
 export default function App() {
   const [data, setData] = useState<VisionData>(getInitialData());
+  const [mode, setMode] = useState<'simple' | 'professional'>('professional');
+  const [aaInputMode, setAaInputMode] = useState<'push-up' | 'direct'>('push-up');
 
   const handleInputChange = (
-    section: 'distance' | 'near',
+    section: 'distance' | 'near' | 'general',
     field: string,
     value: string,
     subField?: keyof PrismData
   ) => {
     setData((prev) => {
+      if (section === 'general') {
+        const newData = { ...prev, [field]: value };
+        
+        // Auto-calculate AA from Blur Point (Push-up method)
+        if (field === 'blurPoint') {
+          const cm = parseFloat(value.replace(/[^\d.-]/g, ''));
+          if (!isNaN(cm) && cm > 0) {
+            newData.aa = (100 / cm).toFixed(1);
+          } else if (value === '') {
+            newData.aa = '';
+          }
+        }
+        
+        // Auto-calculate Blur Point from AA (Direct method)
+        if (field === 'aa') {
+          const d = parseFloat(value.replace(/[^\d.-]/g, ''));
+          if (!isNaN(d) && d > 0) {
+            newData.blurPoint = (100 / d).toFixed(1);
+          } else if (value === '') {
+            newData.blurPoint = '';
+          }
+        }
+        
+        return newData;
+      }
+
       const newData = { 
         ...prev,
         [section]: {
@@ -424,6 +550,7 @@ export default function App() {
     if (e.key === 'Enter') {
       e.preventDefault();
       const inputIds = [
+        'general-age',
         'dist-phoria',
         'dist-bi-blur', 'dist-bi-break', 'dist-bi-recovery',
         'dist-bo-blur', 'dist-bo-break', 'dist-bo-recovery',
@@ -432,7 +559,10 @@ export default function App() {
         'near-bi-blur', 'near-bi-break', 'near-bi-recovery',
         'near-bo-blur', 'near-bo-break', 'near-bo-recovery',
         'near-nra',
-        'near-pra'
+        'near-pra',
+        'near-blur-point',
+        'near-aa',
+        'near-fcc'
       ];
       const currentIndex = inputIds.indexOf(currentId);
       if (currentIndex !== -1 && currentIndex < inputIds.length - 1) {
@@ -465,6 +595,60 @@ export default function App() {
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">
             雙眼視覺分析
           </h1>
+          <div className="flex justify-center gap-8 mt-6">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === 'simple'}
+                onChange={() => setMode('simple')}
+                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <span className={`text-sm font-medium transition-colors ${mode === 'simple' ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                簡易模式
+              </span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === 'professional'}
+                onChange={() => setMode('professional')}
+                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <span className={`text-sm font-medium transition-colors ${mode === 'professional' ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                專業模式
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* General Info Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 space-y-1">
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                受檢者年齡 (Age)
+              </label>
+              <div className="relative max-w-[200px]">
+                <input
+                  id="general-age"
+                  type="text"
+                  value={data.age}
+                  onChange={(e) => handleInputChange('general', 'age', e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, 'general-age')}
+                  placeholder="例如: 25"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">歲</span>
+              </div>
+            </div>
+            <div className="hidden sm:block text-right">
+              <div className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                臨床診斷輔助系統
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -473,7 +657,8 @@ export default function App() {
             <SectionHeader 
               icon={Ruler} 
               title="遠方數據" 
-              subtitle="6 公尺" 
+              subtitle={mode === 'professional' ? "6 公尺" : ""}
+              hideIcon={mode === 'simple'}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -521,28 +706,30 @@ export default function App() {
             
             <div className="space-y-8">
               {/* Fusion Range */}
-              <div className="space-y-6 pt-4 border-t border-gray-100">
-                <PrismInputGroup 
-                  label="Base In (BI)" 
-                  section="distance" 
-                  field="bi" 
-                  values={data.distance.bi}
-                  norms={{ blur: 'x', break: '7', recovery: '4' }}
-                  onInputChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                />
-                <PrismInputGroup 
-                  label="Base Out (BO)" 
-                  section="distance" 
-                  field="bo" 
-                  values={data.distance.bo}
-                  norms={{ blur: '9', break: '19', recovery: '10' }}
-                  onInputChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                />
-              </div>
+              {mode === 'professional' && (
+                <div className="space-y-6 pt-4 border-t border-gray-100">
+                  <PrismInputGroup 
+                    label="Base In (BI)" 
+                    section="distance" 
+                    field="bi" 
+                    values={data.distance.bi}
+                    norms={{ blur: 'x', break: '7', recovery: '4' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <PrismInputGroup 
+                    label="Base Out (BO)" 
+                    section="distance" 
+                    field="bo" 
+                    values={data.distance.bo}
+                    norms={{ blur: '9', break: '19', recovery: '10' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+              )}
 
-              <AnalysisCard data={data} section="distance" />
+              {mode === 'professional' && <AnalysisCard data={data} section="distance" />}
             </div>
           </div>
 
@@ -551,7 +738,8 @@ export default function App() {
             <SectionHeader 
               icon={Activity} 
               title="近方數據" 
-              subtitle="40 公分" 
+              subtitle={mode === 'professional' ? "40 公分" : ""}
+              hideIcon={mode === 'simple'}
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
@@ -644,62 +832,148 @@ export default function App() {
             
             <div className="space-y-8">
               {/* Fusion Range */}
-              <div className="space-y-6 pt-4 border-t border-gray-100">
-                <PrismInputGroup 
-                  label="Base In (BI)" 
-                  section="near" 
-                  field="bi" 
-                  values={data.near.bi}
-                  norms={{ blur: '13', break: '21', recovery: '13' }}
-                  onInputChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                />
-                <PrismInputGroup 
-                  label="Base Out (BO)" 
-                  section="near" 
-                  field="bo" 
-                  values={data.near.bo}
-                  norms={{ blur: '17', break: '21', recovery: '11' }}
-                  onInputChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                />
-              </div>
+              {mode === 'professional' && (
+                <div className="space-y-6 pt-4 border-t border-gray-100">
+                  <PrismInputGroup 
+                    label="Base In (BI)" 
+                    section="near" 
+                    field="bi" 
+                    values={data.near.bi}
+                    norms={{ blur: '13', break: '21', recovery: '13' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <PrismInputGroup 
+                    label="Base Out (BO)" 
+                    section="near" 
+                    field="bo" 
+                    values={data.near.bo}
+                    norms={{ blur: '17', break: '21', recovery: '11' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+              )}
 
-              <AnalysisCard data={data} section="near" />
+              {mode === 'professional' && <AnalysisCard data={data} section="near" />}
 
-              <ComprehensiveAnalysis data={data} />
+              {mode === 'professional' && <ComprehensiveAnalysis data={data} />}
 
               {/* Accommodation */}
               <div className="pt-6 border-t border-gray-100">
-                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
-                  調節功能 (Accommodation)
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <span className="text-xs text-gray-500 font-medium">NRA (-)</span>
-                    <div className="relative">
-                      <input
-                        id="near-nra"
-                        type="text"
-                        value={data.near.nra}
-                        onChange={(e) => handleInputChange('near', 'nra', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
-                        placeholder="+2.00"
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                    調節功能 (Accommodation)
+                  </label>
+                  <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                    <button
+                      onClick={() => setAaInputMode('push-up')}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                        aaInputMode === 'push-up'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      推進法
+                    </button>
+                    <button
+                      onClick={() => setAaInputMode('direct')}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                        aaInputMode === 'direct'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      調節幅度
+                    </button>
+                  </div>
+                </div>
+                
+                {mode === 'professional' && (
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">NRA (-)</span>
+                      <div className="relative">
+                        <input
+                          id="near-nra"
+                          type="text"
+                          value={data.near.nra}
+                          onChange={(e) => handleInputChange('near', 'nra', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
+                          placeholder="+2.00"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">PRA (+)</span>
+                      <div className="relative">
+                        <input
+                          id="near-pra"
+                          type="text"
+                          value={data.near.pra}
+                          onChange={(e) => handleInputChange('near', 'pra', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
+                          placeholder="-2.37"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
                     </div>
                   </div>
+                )}
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {aaInputMode === 'push-up' ? (
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
+                      <div className="relative">
+                        <input
+                          id="near-blur-point"
+                          type="text"
+                          value={data.blurPoint}
+                          onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
+                          placeholder="例如: 10"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        自動換算 AA: {data.aa || '0'} D
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
+                      <div className="relative">
+                        <input
+                          id="near-aa"
+                          type="text"
+                          value={data.aa}
+                          onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
+                          placeholder="例如: 10.0"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        自動換算模糊點: {data.blurPoint || '0'} cm
+                      </p>
+                    </div>
+                  )}
                   <div className="space-y-1">
-                    <span className="text-xs text-gray-500 font-medium">PRA (+)</span>
+                    <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
                     <div className="relative">
                       <input
-                        id="near-pra"
+                        id="near-fcc"
                         type="text"
-                        value={data.near.pra}
-                        onChange={(e) => handleInputChange('near', 'pra', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
-                        placeholder="-2.37"
+                        value={data.fcc}
+                        onChange={(e) => handleInputChange('general', 'fcc', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
+                        placeholder="+0.50"
                         className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
@@ -710,6 +984,12 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {mode === 'simple' && (
+          <div className="mt-8">
+            <ComprehensiveAnalysis data={data} />
+          </div>
+        )}
 
       </div>
     </div>
