@@ -210,23 +210,23 @@ const calculateDysfunctionType = (data: VisionData) => {
   if (!hasAccData) {
     accDiagnosis = "未提供數據";
   } else {
-    const isFCCNormal = data.fccValue !== '' && fcc >= 0.25 && fcc <= 0.75;
-    const isFCCLag = data.fccValue !== '' && fcc > 0.75;
-    const isFCCLead = data.fccValue !== '' && fcc < 0.25;
+    const isFCCNormal = data.fccValue !== '' && fcc >= 0 && fcc <= 1.00;
+    const isFCCLag = data.fccValue !== '' && fcc > 1.00;
+    const isFCCLead = data.fccValue !== '' && fcc < 0;
     const isPRALow = data.near.praValue !== '' && Math.abs(pra) < 1.75;
     const isNRALow = data.near.nraValue !== '' && nra < 1.75;
 
     if (aaStatus === 'Low') {
-      if (isFCCLag) accDiagnosis = "調節不足 + 調節遲緩";
+      if (isFCCLag) accDiagnosis = "調節不足";
       else if (isFCCNormal) accDiagnosis = "調節不足 (目前還夠用)";
       else if (isFCCLead) accDiagnosis = "調節不足 + 調節超前 (使用極限力量)";
       else accDiagnosis = "調節不足 (AA 偏低)";
     } else if (aaStatus === 'Normal') {
       if (isFCCLag) accDiagnosis = "調節遲緩 (有力量但不用)";
-      else if (isFCCLead) accDiagnosis = "調節超前 (過度動用)";
-      else if (isNRALow && isPRALow) accDiagnosis = "調節不靈活 (Accommodative Infacility)";
-      else if (isPRALow) accDiagnosis = "調節力不足 (PRA 偏低)";
-      else if (isNRALow) accDiagnosis = "調節放鬆不足 (NRA 偏低)";
+      else if (isFCCLead && nra < 1.75) accDiagnosis = "調節過度 (一直用力)";
+      else if (isFCCLead) accDiagnosis = "調節超前";
+      else if (nra <= 1.75 && Math.abs(pra) < 1.75) accDiagnosis = "調節不靈活 (切換卡住)";
+      else if (isFCCNormal) accDiagnosis = "調節正常";
       else accDiagnosis = "調節正常";
     } else if (aaStatus === 'High') {
       if (isFCCLag) accDiagnosis = "調節遲緩 (有力量但不用)";
@@ -602,13 +602,16 @@ export default function App() {
     value: string,
     subField?: keyof PrismData
   ) => {
+    // Filter input to only allow numbers, dots, and minus signs (including full-width)
+    const filteredValue = value.replace(/－/g, '-').replace(/[^\d.-]/g, '');
+
     setData((prev) => {
       if (section === 'general') {
-        let finalValue = value;
+        let finalValue = filteredValue;
         
         // Auto-format FCC: "200" -> "2.00"
         if (field === 'fccValue') {
-          const digits = value.replace(/[^\d]/g, '');
+          const digits = filteredValue.replace(/[^\d]/g, '');
           if (digits.length === 3) {
             finalValue = (parseInt(digits) / 100).toFixed(2);
           }
@@ -618,7 +621,7 @@ export default function App() {
         
         // Auto-calculate AA from Blur Point (Push-up method)
         if (field === 'blurPoint') {
-          const cm = parseFloat(finalValue.replace(/[^\d.-]/g, ''));
+          const cm = parseFloat(finalValue);
           if (!isNaN(cm) && cm > 0) {
             newData.aa = (100 / cm).toFixed(1);
           } else if (finalValue === '') {
@@ -628,7 +631,7 @@ export default function App() {
         
         // Auto-calculate Blur Point from AA (Direct method)
         if (field === 'aa') {
-          const d = parseFloat(finalValue.replace(/[^\d.-]/g, ''));
+          const d = parseFloat(finalValue);
           if (!isNaN(d) && d > 0) {
             newData.blurPoint = (100 / d).toFixed(1);
           } else if (finalValue === '') {
@@ -646,10 +649,10 @@ export default function App() {
         }
       };
       
-      let finalValue = value;
+      let finalValue = filteredValue;
       // Auto-format NRA/PRA: "200" -> "2.00"
       if (field === 'nraValue' || field === 'praValue') {
-        const digits = value.replace(/[^\d]/g, '');
+        const digits = filteredValue.replace(/[^\d]/g, '');
         if (digits.length === 3) {
           finalValue = (parseInt(digits) / 100).toFixed(2);
         }
@@ -668,12 +671,12 @@ export default function App() {
 
         // Auto-switch phoria type based on value
         if (field === 'phoriaValue' || field === 'phoriaPlus1Value') {
-          const num = parseFloat(value.replace(/[^\d.-]/g, ''));
+          const num = parseFloat(filteredValue);
           const typeField = field === 'phoriaValue' ? 'phoriaType' : 'phoriaPlus1Type';
           if (num === 0) {
             // @ts-ignore
             newData[section][typeField] = 'ortho';
-          } else if (prev[section][typeField] === 'ortho' && value !== '') {
+          } else if (prev[section][typeField] === 'ortho' && filteredValue !== '') {
             // @ts-ignore
             newData[section][typeField] = 'exo'; 
           }
