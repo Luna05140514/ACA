@@ -350,6 +350,8 @@ const calculateDysfunctionType = (data: VisionData) => {
     hasAccData,
     inputs: {
       aa: data.aa,
+      effectiveAA: aa > 0 ? aa.toFixed(2) : null,
+      isAAFromPRA: data.aa === '' && data.near.praValue !== '',
       fcc: data.fccValue ? `${data.fccType === 'plus' ? '+' : '-'}${data.fccValue}` : null,
       nra: data.near.nraValue ? `${data.near.nraType === 'plus' ? '+' : '-'}${data.near.nraValue}` : null,
       pra: data.near.praValue ? `${data.near.praType === 'plus' ? '+' : '-'}${data.near.praValue}` : null,
@@ -389,12 +391,13 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
             
             {/* Input Values Summary */}
             <div className="flex flex-wrap gap-3 mb-4">
-              {result.inputs.aa && (
+              {result.inputs.effectiveAA && (
                 <div className="bg-white/5 px-2 py-1 rounded border border-white/10">
                   <span className="text-[9px] text-blue-200 uppercase font-bold block leading-none mb-1">
                     AA {result.aaStatus === 'Low' ? '(Low)' : result.aaStatus === 'High' ? '(High)' : ''}
+                    {result.inputs.isAAFromPRA && <span className="ml-1 text-[8px] opacity-60">(由PRA推估)</span>}
                   </span>
-                  <span className="text-xs font-mono font-bold">{result.inputs.aa} D</span>
+                  <span className="text-xs font-mono font-bold">{result.inputs.effectiveAA} D</span>
                 </div>
               )}
               {result.inputs.fcc && (
