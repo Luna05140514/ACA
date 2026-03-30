@@ -631,8 +631,8 @@ export default function App() {
       if (section === 'general') {
         let finalValue = filteredValue;
         
-        // Auto-format FCC: "200" -> "2.00"
-        if (field === 'fccValue') {
+        // Auto-format FCC & AA: "200" -> "2.00"
+        if (field === 'fccValue' || field === 'aa') {
           const digits = filteredValue.replace(/[^\d]/g, '');
           if (digits.length === 3) {
             finalValue = (parseInt(digits) / 100).toFixed(2);
@@ -1151,7 +1151,7 @@ export default function App() {
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                       </div>
                       <p className="text-[10px] text-gray-400 mt-1">
-                        自動換算模糊點: {data.blurPoint || '0'} cm
+                        自動換算 AA: {data.aa || '0'} D (模糊點: {data.blurPoint || '0'} cm)
                       </p>
                     </div>
                   )}
