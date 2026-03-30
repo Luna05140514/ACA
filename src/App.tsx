@@ -602,8 +602,9 @@ export default function App() {
     value: string,
     subField?: keyof PrismData
   ) => {
-    // Filter input to only allow numbers, dots, and minus signs (including full-width)
-    const filteredValue = value.replace(/－/g, '-').replace(/[^\d.-]/g, '');
+    // Only filter if it's a numeric field. Type fields (exo/eso, plus/minus) should not be filtered.
+    const isTypeField = field.toLowerCase().includes('type');
+    const filteredValue = isTypeField ? value : value.replace(/－/g, '-').replace(/[^\d.-]/g, '');
 
     setData((prev) => {
       if (section === 'general') {
