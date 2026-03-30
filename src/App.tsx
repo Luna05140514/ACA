@@ -223,18 +223,18 @@ const calculateDysfunctionType = (data: VisionData) => {
       else accDiagnosis = "調節不足 (AA 偏低)";
     } else if (aaStatus === 'Normal') {
       if (isFCCLag) accDiagnosis = "調節遲緩 (有力量但不用)";
-      else if (isFCCLead && nra < 1.75) accDiagnosis = "調節過度 (一直用力)";
+      else if (isFCCLead && nra < 1.75 && data.near.nraValue !== '') accDiagnosis = "調節過度 (一直用力)";
       else if (isFCCLead) accDiagnosis = "調節超前";
-      else if (nra <= 1.75 && Math.abs(pra) < 1.75) accDiagnosis = "調節不靈活 (切換卡住)";
+      else if (nra <= 1.75 && data.near.nraValue !== '' && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節不靈活 (切換卡住)";
+      else if (isFCCNormal && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節疲勞";
       else if (isFCCNormal) accDiagnosis = "調節正常";
       else accDiagnosis = "調節正常";
     } else if (aaStatus === 'High') {
       if (isFCCLag) accDiagnosis = "調節遲緩 (有力量但不用)";
-      else if (isFCCLead) {
-        if (isNRALow) accDiagnosis = "調節過度 (一直用力)";
-        else accDiagnosis = "調節過度";
-      } else if (isFCCNormal) accDiagnosis = "調節過度 (當下調節可放鬆)";
-      else if (isNRALow && isPRALow) accDiagnosis = "調節不靈活 (Accommodative Infacility)";
+      else if (isFCCLead && nra < 1.75 && data.near.nraValue !== '') accDiagnosis = "調節過度 (一直用力)";
+      else if (nra <= 1.75 && data.near.nraValue !== '' && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節不靈活 (切換卡住)";
+      else if (isFCCNormal && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節疲勞";
+      else if (isFCCNormal && nra >= 1.75 && data.near.nraValue !== '' && pra <= -1.75 && data.near.praValue !== '') accDiagnosis = "調節過多(調節運用正常)";
       else accDiagnosis = "調節過度 (AA 偏高)";
     }
   }
