@@ -173,10 +173,15 @@ const calculateDysfunctionType = (data: VisionData) => {
   const distType = data.distance.phoriaType;
   const nearType = data.near.phoriaType;
   const age = parseValue(data.age);
-  const aa = parseValue(data.aa);
+  let aa = parseValue(data.aa);
   const nra = parseValue(data.near.nraValue) * (data.near.nraType === 'plus' ? 1 : -1);
   const pra = parseValue(data.near.praValue) * (data.near.praType === 'plus' ? 1 : -1);
   const fcc = parseValue(data.fccValue) * (data.fccType === 'plus' ? 1 : -1);
+
+  // If AA is not entered, use |PRA - 2.5| as AA value
+  if (data.aa === '' && data.near.praValue !== '') {
+    aa = Math.abs(pra - 2.5);
+  }
 
   const hasAccData = !!(data.aa || data.fccValue || data.near.nraValue || data.near.praValue);
 
