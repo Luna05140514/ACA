@@ -14,7 +14,8 @@ interface PrismData {
 
 interface VisionData {
   age: string;
-  fcc: string;
+  fccValue: string;
+  fccType: 'plus' | 'minus';
   aa: string;
   blurPoint: string;
   distance: {
@@ -43,7 +44,8 @@ const initialPrismData = (): PrismData => ({
 
 const getInitialData = (): VisionData => ({
   age: '',
-  fcc: '',
+  fccValue: '',
+  fccType: 'plus',
   aa: '',
   blurPoint: '',
   distance: {
@@ -170,7 +172,7 @@ const calculateDysfunctionType = (data: VisionData) => {
   const aa = parseValue(data.aa);
   const nra = parseValue(data.near.nra);
   const pra = parseValue(data.near.pra);
-  const fcc = parseValue(data.fcc);
+  const fcc = parseValue(data.fccValue) * (data.fccType === 'plus' ? 1 : -1);
 
   // AC/A calculation (Gradient)
   let aca = 0;
@@ -257,19 +259,19 @@ const calculateDysfunctionType = (data: VisionData) => {
 
   // Accommodation Status
   let accDiagnosis = "調節正常";
-  const isFCCNormal = data.fcc !== '' && fcc >= 0 && fcc <= 1.00;
-  const isFCCLag = data.fcc !== '' && fcc > 1.00;
-  const isFCCLead = data.fcc !== '' && fcc < 0;
+  const isFCCNormal = data.fccValue !== '' && fcc >= 0 && fcc <= 1.00;
+  const isFCCLag = data.fccValue !== '' && fcc > 1.00;
+  const isFCCLead = data.fccValue !== '' && fcc < 0;
   const isPRALow = data.near.pra !== '' && Math.abs(pra) < 1.75;
   const isNRALow = data.near.nra !== '' && nra < 1.75;
 
   if (aaStatus === 'Low') {
-    if (isPRALow && isFCCLag) {
+    if (isFCCLag) {
       accDiagnosis = "調節不足 + 調節遲緩";
-    } else if (isPRALow && isFCCNormal) {
-      accDiagnosis = "調節不足";
-    } else if (!isPRALow || isFCCNormal) {
+    } else if (isFCCNormal) {
       accDiagnosis = "調節不足 (目前還夠用)";
+    } else if (isFCCLead) {
+      accDiagnosis = "調節不足 + 調節超前 (使用極限力量)";
     } else {
       accDiagnosis = "調節不足";
     }
@@ -381,7 +383,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
           <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">FCC 狀態</div>
           <div className="text-xl font-mono font-black">
-            {data.fcc || '-'}
+            {data.fccValue ? (data.fccType === 'plus' ? '+' : '-') + data.fccValue : '-'}
           </div>
         </div>
       </div>
@@ -515,24 +517,34 @@ export default function App() {
   ) => {
     setData((prev) => {
       if (section === 'general') {
-        const newData = { ...prev, [field]: value };
+        let finalValue = value;
+        
+        // Auto-format FCC: "200" -> "2.00"
+        if (field === 'fccValue') {
+          const digits = value.replace(/[^\d]/g, '');
+          if (digits.length === 3) {
+            finalValue = (parseInt(digits) / 100).toFixed(2);
+          }
+        }
+
+        const newData = { ...prev, [field]: finalValue };
         
         // Auto-calculate AA from Blur Point (Push-up method)
         if (field === 'blurPoint') {
-          const cm = parseFloat(value.replace(/[^\d.-]/g, ''));
+          const cm = parseFloat(finalValue.replace(/[^\d.-]/g, ''));
           if (!isNaN(cm) && cm > 0) {
             newData.aa = (100 / cm).toFixed(1);
-          } else if (value === '') {
+          } else if (finalValue === '') {
             newData.aa = '';
           }
         }
         
         // Auto-calculate Blur Point from AA (Direct method)
         if (field === 'aa') {
-          const d = parseFloat(value.replace(/[^\d.-]/g, ''));
+          const d = parseFloat(finalValue.replace(/[^\d.-]/g, ''));
           if (!isNaN(d) && d > 0) {
             newData.blurPoint = (100 / d).toFixed(1);
-          } else if (value === '') {
+          } else if (finalValue === '') {
             newData.blurPoint = '';
           }
         }
@@ -999,17 +1011,34 @@ export default function App() {
                   )}
                   <div className="space-y-1">
                     <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
-                    <div className="relative">
-                      <input
-                        id="near-fcc"
-                        type="text"
-                        value={data.fcc}
-                        onChange={(e) => handleInputChange('general', 'fcc', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
-                        placeholder="+0.50"
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                    <div className="flex gap-2">
+                      <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                        {(['plus', 'minus'] as const).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => handleInputChange('general', 'fccType', type)}
+                            className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                              data.fccType === type
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                          >
+                            {type === 'plus' ? '+' : '-'}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="relative flex-1">
+                        <input
+                          id="near-fcc"
+                          type="text"
+                          value={data.fccValue}
+                          onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
+                          placeholder="0.50"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
                     </div>
                   </div>
                 </div>
