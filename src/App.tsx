@@ -284,18 +284,34 @@ const calculateDysfunctionType = (data: VisionData) => {
     const nearSigned = nearRaw * (nearType === 'eso' ? 1 : -1);
     const diff = Math.abs(distSigned - nearSigned);
 
-    if (distType === 'exo' && nearType === 'exo' && diff <= 4) {
-      type = "單純外斜視 (Basic Exophoria)";
-      desc = "遠近方均為外斜視且差異在 4Δ 以內。";
-    } else if (distType === 'eso' && nearType === 'eso' && diff <= 4) {
-      type = "單純內斜視 (Basic Esophoria)";
-      desc = "遠近方均為內斜視且差異在 4Δ 以內。";
+    if (distType === 'exo' && nearType === 'exo') {
+      if (diff <= 4) {
+        type = "單純外斜視 (Basic Exophoria)";
+        desc = "遠近方均為外斜視且差異在 4Δ 以內。";
+      } else if (distRaw > nearRaw) {
+        type = "開散過度 (Divergence Excess)";
+        desc = "遠近方均為外斜視，且遠方外斜程度大於近方 4Δ 以上。";
+      } else {
+        type = "集合不足 (Convergence Insufficiency)";
+        desc = "遠近方均為外斜視，且近方外斜程度大於遠方 4Δ 以上。";
+      }
+    } else if (distType === 'eso' && nearType === 'eso') {
+      if (diff <= 4) {
+        type = "單純內斜視 (Basic Esophoria)";
+        desc = "遠近方均為內斜視且差異在 4Δ 以內。";
+      } else if (distRaw > nearRaw) {
+        type = "開散不足 (Divergence Insufficiency)";
+        desc = "遠近方均為內斜視，且遠方內斜程度大於近方 4Δ 以上。";
+      } else {
+        type = "集合過度 (Convergence Excess)";
+        desc = "遠近方均為內斜視，且近方內斜程度大於遠方 4Δ 以上。";
+      }
     } else if (distType === 'exo' && nearType === 'eso' && (aca > 5 || aaStatus === 'High')) {
       type = "開散過度 + 調節過度";
       desc = "遠方外斜且近方內斜，伴隨高 AC/A 或高調節幅度。";
     } else if (distType === 'eso' && nearType === 'exo') {
       type = "重新確認斜位";
-      desc = "遠方內斜且近方外斜，此情況較少見，建議重新測量。";
+      desc = "遠方內斜且近方外斜，此情況極少見，建議重新測量。";
     } else {
       type = "複合型視功能異常";
       desc = "遠近方斜位均不正常，且不符合單純型分類。";
