@@ -36,6 +36,7 @@ interface VisionData {
     praValue: string;
     praType: 'plus' | 'minus';
   };
+  pd: string;
 }
 
 const initialPrismData = (): PrismData => ({
@@ -68,6 +69,7 @@ const getInitialData = (): VisionData => ({
     praValue: '',
     praType: 'minus',
   },
+  pd: '',
 });
 
 // Analysis Logic
@@ -96,18 +98,28 @@ const calculateAnalysis = (data: VisionData, section: 'distance' | 'near') => {
   // AC/A Ratio (Gradient Method) - Always calculate from near data if available
   let acaResult = null;
   let acaValue = 0;
+  let acaMethod = 'Gradient';
+
   if (data.near.phoriaValue !== '' && data.near.phoriaPlus1Value !== '') {
     const p1 = parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1);
     const p2 = parseValue(data.near.phoriaPlus1Value) * (data.near.phoriaPlus1Type === 'eso' ? 1 : -1);
     acaValue = Math.abs(p1 - p2);
-    if (section === 'near') {
-      const formattedAca = acaValue % 1 === 0 ? acaValue.toString() : acaValue.toFixed(1);
-      acaResult = {
-        value: formattedAca,
-        message: formattedAca,
-        status: acaValue >= 3 && acaValue <= 5 ? '正常' : acaValue < 3 ? '偏低' : '偏高'
-      };
-    }
+  } else if (data.distance.phoriaValue !== '' && data.near.phoriaValue !== '' && data.pd !== '') {
+    // Calculated AC/A = PD(cm) + 0.4 * (NearPhoria - DistPhoria)
+    const pdCm = parseValue(data.pd) / 10; // PD is usually in mm, convert to cm
+    const distP = parseValue(data.distance.phoriaValue) * (data.distance.phoriaType === 'eso' ? 1 : -1);
+    const nearP = parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1);
+    acaValue = pdCm + 0.4 * (nearP - distP);
+    acaMethod = 'Calculated';
+  }
+
+  if (acaValue > 0 && section === 'near') {
+    const formattedAca = acaValue % 1 === 0 ? acaValue.toString() : acaValue.toFixed(1);
+    acaResult = {
+      value: formattedAca,
+      message: `${formattedAca} (${acaMethod === 'Gradient' ? '梯度型' : '計算型'})`,
+      status: acaValue >= 3 && acaValue <= 5 ? '正常' : acaValue < 3 ? '偏低' : '偏高'
+    };
   }
 
   // Sheard's Criterion: Reserve >= 2 * Demand
@@ -185,12 +197,17 @@ const calculateDysfunctionType = (data: VisionData) => {
 
   const hasAccData = !!(data.aa || data.fccValue || data.near.nraValue || data.near.praValue);
 
-  // AC/A calculation (Gradient)
+  // AC/A calculation
   let aca = 0;
   if (data.near.phoriaValue !== '' && data.near.phoriaPlus1Value !== '') {
     const p1 = parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1);
     const p2 = parseValue(data.near.phoriaPlus1Value) * (data.near.phoriaPlus1Type === 'eso' ? 1 : -1);
     aca = Math.abs(p1 - p2);
+  } else if (data.distance.phoriaValue !== '' && data.near.phoriaValue !== '' && data.pd !== '') {
+    const pdCm = parseValue(data.pd) / 10;
+    const distP = parseValue(data.distance.phoriaValue) * (data.distance.phoriaType === 'eso' ? 1 : -1);
+    const nearP = parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1);
+    aca = pdCm + 0.4 * (nearP - distP);
   }
 
   // Norms
@@ -466,8 +483,8 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         {hasPhoriaData && (
           <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
             <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">AC/A 比值</div>
-            <div className="text-xl font-mono font-black">
-              {data.near.phoriaPlus1Value ? calculateAnalysis(data, 'near').aca?.value || '-' : '-'}
+            <div className="text-sm font-mono font-bold">
+              {calculateAnalysis(data, 'near').aca?.message || '-'}
             </div>
           </div>
         )}
@@ -717,6 +734,7 @@ export default function App() {
       e.preventDefault();
       const inputIds = [
         'general-age',
+        'general-pd',
         'dist-phoria',
         'dist-bi-blur', 'dist-bi-break', 'dist-bi-recovery',
         'dist-bo-blur', 'dist-bo-break', 'dist-bo-recovery',
@@ -802,26 +820,45 @@ export default function App() {
               <RotateCcw size={18} className="group-hover:rotate-[-45deg] transition-transform" />
             </button>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 space-y-1">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
-                受檢者年齡 (Age)
-              </label>
-              <div className="relative max-w-[200px]">
-                <input
-                  id="general-age"
-                  type="text"
-                  value={data.age}
-                  onChange={(e) => handleInputChange('general', 'age', e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, 'general-age')}
-                  placeholder="例如: 25"
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">歲</span>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+            <div className="grid grid-cols-2 gap-4 w-full sm:w-auto">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                  受檢者年齡 (Age)
+                </label>
+                <div className="relative">
+                  <input
+                    id="general-age"
+                    type="text"
+                    value={data.age}
+                    onChange={(e) => handleInputChange('general', 'age', e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, 'general-age')}
+                    placeholder="例如: 25"
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">歲</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                  瞳距 (PD)
+                </label>
+                <div className="relative">
+                  <input
+                    id="general-pd"
+                    type="text"
+                    value={data.pd}
+                    onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
+                    placeholder="例如: 64"
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
+                </div>
               </div>
             </div>
-            <div className="hidden sm:block text-right">
-              <div className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
+            <div className="hidden lg:block flex-1 text-right">
+              <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
                 臨床診斷輔助系統
               </div>
             </div>
