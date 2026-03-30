@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Eye, Ruler, Activity, Save, RotateCcw, Info } from 'lucide-react';
+import { Eye, Ruler, Activity, Save, RotateCcw, Info, AlertTriangle } from 'lucide-react';
 
 interface PrismData {
   blur: string;
@@ -31,8 +31,10 @@ interface VisionData {
     phoriaPlus1Type: 'exo' | 'eso' | 'ortho';
     bi: PrismData;
     bo: PrismData;
-    nra: string;
-    pra: string;
+    nraValue: string;
+    nraType: 'plus' | 'minus';
+    praValue: string;
+    praType: 'plus' | 'minus';
   };
 }
 
@@ -61,8 +63,10 @@ const getInitialData = (): VisionData => ({
     phoriaPlus1Type: 'ortho',
     bi: initialPrismData(),
     bo: initialPrismData(),
-    nra: '',
-    pra: '',
+    nraValue: '',
+    nraType: 'plus',
+    praValue: '',
+    praType: 'minus',
   },
 });
 
@@ -170,8 +174,8 @@ const calculateDysfunctionType = (data: VisionData) => {
   const nearType = data.near.phoriaType;
   const age = parseValue(data.age);
   const aa = parseValue(data.aa);
-  const nra = parseValue(data.near.nra);
-  const pra = parseValue(data.near.pra);
+  const nra = parseValue(data.near.nraValue) * (data.near.nraType === 'plus' ? 1 : -1);
+  const pra = parseValue(data.near.praValue) * (data.near.praType === 'plus' ? 1 : -1);
   const fcc = parseValue(data.fccValue) * (data.fccType === 'plus' ? 1 : -1);
 
   // AC/A calculation (Gradient)
@@ -262,8 +266,8 @@ const calculateDysfunctionType = (data: VisionData) => {
   const isFCCNormal = data.fccValue !== '' && fcc >= 0 && fcc <= 1.00;
   const isFCCLag = data.fccValue !== '' && fcc > 1.00;
   const isFCCLead = data.fccValue !== '' && fcc < 0;
-  const isPRALow = data.near.pra !== '' && Math.abs(pra) < 1.75;
-  const isNRALow = data.near.nra !== '' && nra < 1.75;
+  const isPRALow = data.near.praValue !== '' && Math.abs(pra) < 1.75;
+  const isNRALow = data.near.nraValue !== '' && nra < 1.75;
 
   if (aaStatus === 'Low') {
     if (isFCCLag) {
@@ -320,15 +324,6 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Primary Diagnosis */}
-        <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-inner">
-          <div className="text-xs font-bold text-blue-200 mb-2 uppercase tracking-widest">聚散功能判定</div>
-          <div className="text-2xl font-black mb-3 leading-tight">{result.type}</div>
-          <p className="text-sm text-blue-50 leading-relaxed opacity-90">
-            {result.desc}
-          </p>
-        </div>
-
         {/* Accommodation Diagnosis */}
         <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-inner">
           <div className="text-xs font-bold text-blue-200 mb-2 uppercase tracking-widest">調節功能判定</div>
@@ -358,6 +353,15 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
             </div>
           )}
         </div>
+
+        {/* Primary Diagnosis */}
+        <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-inner">
+          <div className="text-xs font-bold text-blue-200 mb-2 uppercase tracking-widest">聚散功能判定</div>
+          <div className="text-2xl font-black mb-3 leading-tight">{result.type}</div>
+          <p className="text-sm text-blue-50 leading-relaxed opacity-90">
+            {result.desc}
+          </p>
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -377,7 +381,8 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
           <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">NRA/PRA</div>
           <div className="text-sm font-mono font-bold">
-            {data.near.nra || '-'}/{data.near.pra || '-'}
+            {data.near.nraValue ? (data.near.nraType === 'plus' ? '+' : '-') + data.near.nraValue : '-'}/
+            {data.near.praValue ? (data.near.praType === 'plus' ? '+' : '-') + data.near.praValue : '-'}
           </div>
         </div>
         <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
@@ -386,6 +391,16 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
             {data.fccValue ? (data.fccType === 'plus' ? '+' : '-') + data.fccValue : '-'}
           </div>
         </div>
+      </div>
+
+      {/* Result Interpretation Warning */}
+      <div className="mt-8 pt-6 border-t border-white/10 text-center space-y-1">
+        <p className="text-[11px] text-blue-200/60 leading-relaxed font-medium">
+          分析結果受受測者主觀反應、疲勞程度及測試環境影響，僅反映當下視覺狀態。
+        </p>
+        <p className="text-[11px] text-blue-200/60 leading-relaxed font-medium">
+          結果僅供參考，任何視覺訓練或配鏡決策應由專業人員經完整評估後。
+        </p>
       </div>
     </div>
   );
@@ -559,16 +574,25 @@ export default function App() {
         }
       };
       
+      let finalValue = value;
+      // Auto-format NRA/PRA: "200" -> "2.00"
+      if (field === 'nraValue' || field === 'praValue') {
+        const digits = value.replace(/[^\d]/g, '');
+        if (digits.length === 3) {
+          finalValue = (parseInt(digits) / 100).toFixed(2);
+        }
+      }
+
       if (subField && (field === 'bi' || field === 'bo')) {
         // @ts-ignore
         newData[section][field] = {
           // @ts-ignore
           ...prev[section][field],
-          [subField]: value,
+          [subField]: finalValue,
         };
       } else {
         // @ts-ignore
-        newData[section][field] = value;
+        newData[section][field] = finalValue;
 
         // Auto-switch phoria type based on value
         if (field === 'phoriaValue' || field === 'phoriaPlus1Value') {
@@ -624,15 +648,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans relative">
       <div className="max-w-5xl mx-auto relative">
-        {/* Top Right Reset Button */}
-        <div className="absolute top-0 right-0">
-          <button
-            onClick={handleReset}
-            title="清除所有數據"
-            className="p-3 bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 rounded-xl transition-all shadow-sm group"
-          >
-            <RotateCcw size={20} className="group-hover:rotate-[-45deg] transition-transform" />
-          </button>
+        {/* Top Warning */}
+        <div className="mb-6 text-center">
+          <p className="text-[10px] font-bold text-red-600 tracking-tight">
+            此工具僅為雙眼視覺功能分析輔助，所有輸入與操作結果僅供參考。
+          </p>
         </div>
 
         {/* Header */}
@@ -640,6 +660,11 @@ export default function App() {
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">
             雙眼視覺分析
           </h1>
+          <div className="mt-3 flex items-center justify-center gap-3">
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              製作者 Tony
+            </div>
+          </div>
           <div className="flex justify-center gap-8 mt-6">
             <label className="flex items-center gap-2 cursor-pointer group">
               <input
@@ -669,7 +694,17 @@ export default function App() {
         </div>
 
         {/* General Info Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8 relative">
+          {/* Box Reset Button */}
+          <div className="absolute top-4 right-4">
+            <button
+              onClick={handleReset}
+              title="清除所有數據"
+              className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 rounded-xl transition-all shadow-sm group"
+            >
+              <RotateCcw size={18} className="group-hover:rotate-[-45deg] transition-transform" />
+            </button>
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex-1 space-y-1">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
@@ -937,33 +972,49 @@ export default function App() {
                 {mode === 'professional' && (
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">NRA (-)</span>
-                      <div className="relative">
-                        <input
-                          id="near-nra"
-                          type="text"
-                          value={data.near.nra}
-                          onChange={(e) => handleInputChange('near', 'nra', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
-                          placeholder="+2.00"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      <span className="text-xs text-gray-500 font-medium">NRA (+)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInputChange('near', 'nraType', data.near.nraType === 'plus' ? 'minus' : 'plus')}
+                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                        >
+                          {data.near.nraType === 'plus' ? '+' : '-'}
+                        </button>
+                        <div className="relative flex-1">
+                          <input
+                            id="near-nra"
+                            type="text"
+                            value={data.near.nraValue}
+                            onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
+                            placeholder="2.00"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">PRA (+)</span>
-                      <div className="relative">
-                        <input
-                          id="near-pra"
-                          type="text"
-                          value={data.near.pra}
-                          onChange={(e) => handleInputChange('near', 'pra', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
-                          placeholder="-2.37"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      <span className="text-xs text-gray-500 font-medium">PRA (-)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInputChange('near', 'praType', data.near.praType === 'plus' ? 'minus' : 'plus')}
+                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                        >
+                          {data.near.praType === 'plus' ? '+' : '-'}
+                        </button>
+                        <div className="relative flex-1">
+                          <input
+                            id="near-pra"
+                            type="text"
+                            value={data.near.praValue}
+                            onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
+                            placeholder="2.37"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1012,21 +1063,12 @@ export default function App() {
                   <div className="space-y-1">
                     <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
                     <div className="flex gap-2">
-                      <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-                        {(['plus', 'minus'] as const).map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleInputChange('general', 'fccType', type)}
-                            className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
-                              data.fccType === type
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                          >
-                            {type === 'plus' ? '+' : '-'}
-                          </button>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
+                        className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                      >
+                        {data.fccType === 'plus' ? '+' : '-'}
+                      </button>
                       <div className="relative flex-1">
                         <input
                           id="near-fcc"
@@ -1053,6 +1095,21 @@ export default function App() {
           </div>
         )}
 
+        {/* Footer Disclaimer */}
+        <div className="mt-12 pt-8 border-t border-gray-200 text-center max-w-2xl mx-auto space-y-1">
+          <p className="text-[11px] text-gray-400 leading-relaxed">
+            本系統及其分析結果不構成醫療診斷、處方或治療依據。
+          </p>
+          <p className="text-[11px] text-gray-400 leading-relaxed">
+            使用者不得依本系統自行進行任何醫療決策，包括配鏡、視覺訓練或治療。
+          </p>
+          <p className="text-[11px] text-gray-400 leading-relaxed">
+            如有任何視覺異常或不適症狀，應立即諮詢合格眼科醫師或專業驗光人員。
+          </p>
+          <p className="text-[11px] text-gray-400 leading-relaxed">
+            系統開發者對使用結果所引起的任何直接或間接損失概不負責。
+          </p>
+        </div>
       </div>
     </div>
   );
