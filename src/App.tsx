@@ -256,16 +256,49 @@ const calculateDysfunctionType = (data: VisionData) => {
   }
 
   // Accommodation Status
-  let accDiagnosis = "正常";
-  const isPRALow = pra !== 0 && Math.abs(pra) < 2.25;
-  const isNRALow = nra !== 0 && nra < 2.00;
-  const isFCCLow = data.fcc !== '' && fcc <= 0.25;
-  const isFCCNegative = data.fcc !== '' && fcc < 0;
+  let accDiagnosis = "調節正常";
+  const isFCCNormal = data.fcc !== '' && fcc >= 0 && fcc <= 1.00;
+  const isFCCLag = data.fcc !== '' && fcc > 1.00;
+  const isFCCLead = data.fcc !== '' && fcc < 0;
+  const isPRALow = data.near.pra !== '' && Math.abs(pra) < 1.75;
+  const isNRALow = data.near.nra !== '' && nra < 1.75;
 
-  if (aaStatus === 'Low' || isPRALow || isFCCLow) {
-    accDiagnosis = "調節不足 (Accommodative Insufficiency)";
-  } else if (aaStatus === 'High' || isNRALow || isFCCNegative) {
-    accDiagnosis = "調節過度 (Accommodative Excess)";
+  if (aaStatus === 'Low') {
+    if (isPRALow && isFCCLag) {
+      accDiagnosis = "調節不足 + 調節遲緩";
+    } else if (isPRALow && isFCCNormal) {
+      accDiagnosis = "調節不足";
+    } else if (!isPRALow || isFCCNormal) {
+      accDiagnosis = "調節不足 (目前還夠用)";
+    } else {
+      accDiagnosis = "調節不足";
+    }
+  } else if (aaStatus === 'Normal') {
+    if (isFCCLag) {
+      accDiagnosis = "調節遲緩 (有力量但不用)";
+    } else if (isFCCLead) {
+      accDiagnosis = "調節超前";
+    } else if (isNRALow && !isPRALow) {
+      accDiagnosis = "調節不靈活 (切換卡住)";
+    } else if (isFCCNormal) {
+      accDiagnosis = "調節正常";
+    }
+  } else if (aaStatus === 'High') {
+    if (isFCCLag) {
+      accDiagnosis = "調節遲緩 (有力量但不用)";
+    } else if (isFCCLead) {
+      if (isNRALow) {
+        accDiagnosis = "調節過度 (一直用力)";
+      } else {
+        accDiagnosis = "調節過度";
+      }
+    } else if (isFCCNormal) {
+      accDiagnosis = "調節過度 (當下調節可放鬆)";
+    } else if (isNRALow && !isPRALow) {
+      accDiagnosis = "調節不靈活 (切換卡住)";
+    } else {
+      accDiagnosis = "調節過度";
+    }
   }
 
   return { type, desc, accDiagnosis, aaStatus, minAA, maxAA };
