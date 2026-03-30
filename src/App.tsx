@@ -774,7 +774,7 @@ export default function App() {
         </div>
 
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-6">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">
             雙眼視覺分析
           </h1>
@@ -954,62 +954,63 @@ export default function App() {
           </div>
         ) : (
           <>
+            {/* Box Reset Button */}
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={handleReset}
+                title="清除所有數據"
+                className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 rounded-xl transition-all shadow-sm group"
+              >
+                <RotateCcw size={18} className="group-hover:rotate-[-45deg] transition-transform" />
+              </button>
+            </div>
+
             {/* General Info Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8 relative">
-          {/* Box Reset Button */}
-          <div className="absolute top-4 right-4">
-            <button
-              onClick={handleReset}
-              title="清除所有數據"
-              className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 rounded-xl transition-all shadow-sm group"
-            >
-              <RotateCcw size={18} className="group-hover:rotate-[-45deg] transition-transform" />
-            </button>
-          </div>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-            <div className="grid grid-cols-2 gap-4 w-full sm:w-auto">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
-                  受檢者年齡 (Age)
-                </label>
-                <div className="relative">
-                  <input
-                    id="general-age"
-                    type="text"
-                    value={data.age}
-                    onChange={(e) => handleInputChange('general', 'age', e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, 'general-age')}
-                    placeholder="例如: 25"
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">歲</span>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                <div className="grid grid-cols-2 gap-4 w-full sm:w-auto">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      受檢者年齡 (Age)
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="general-age"
+                        type="text"
+                        value={data.age}
+                        onChange={(e) => handleInputChange('general', 'age', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'general-age')}
+                        placeholder="例如: 25"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">歲</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      瞳距 (PD)
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="general-pd"
+                        type="text"
+                        value={data.pd}
+                        onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
+                        placeholder="例如: 64"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
-                  瞳距 (PD)
-                </label>
-                <div className="relative">
-                  <input
-                    id="general-pd"
-                    type="text"
-                    value={data.pd}
-                    onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
-                    placeholder="例如: 64"
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
+                <div className="hidden lg:block flex-1 text-right">
+                  <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                    臨床診斷輔助系統
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="hidden lg:block flex-1 text-right">
-              <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
-                臨床診斷輔助系統
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Distance Section (6m) */}
