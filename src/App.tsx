@@ -231,8 +231,8 @@ const calculateDysfunctionType = (data: VisionData) => {
     accDiagnosis = "未提供數據";
   } else {
     const isFCCLag = data.fccValue !== '' && fcc > 0.75;
-    const isFCCLead = data.fccValue !== '' && fcc < -0.25;
-    const isFCCNormal = data.fccValue !== '' && fcc >= -0.25 && fcc <= 0.75;
+    const isFCCLead = data.fccValue !== '' && fcc < 0;
+    const isFCCNormal = data.fccValue !== '' && fcc >= 0 && fcc <= 0.75;
 
     if (isFCCLag) {
       if (aaStatus === 'Low') {
@@ -637,7 +637,7 @@ const PrismInputGroup = ({
 
 export default function App() {
   const [data, setData] = useState<VisionData>(getInitialData());
-  const [mode, setMode] = useState<'simple' | 'professional' | 'intro'>('professional');
+  const [mode, setMode] = useState<'simple' | 'professional'>('professional');
   const [aaInputMode, setAaInputMode] = useState<'push-up' | 'direct'>('push-up');
 
   const handleInputChange = (
@@ -811,152 +811,11 @@ export default function App() {
                 專業模式
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === 'intro'}
-                onChange={() => setMode('intro')}
-                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-              />
-              <span className={`text-sm font-medium transition-colors ${mode === 'intro' ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`}>
-                介紹模式
-              </span>
-            </label>
           </div>
         </div>
 
-        {mode === 'intro' ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-            <div className="flex items-center gap-3 mb-8 border-b border-gray-100 pb-4">
-              <Info className="text-blue-600" size={28} />
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">臨床指標與異常定義</h2>
-                <p className="text-sm text-gray-500">了解各項數據的臨床意義與診斷標準</p>
-              </div>
-            </div>
-
-            <div className="space-y-10">
-              {/* Accommodation Section */}
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Activity className="text-blue-500" size={20} />
-                  <h3 className="text-lg font-bold text-gray-800">調節功能指標 (Accommodation)</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                    <div className="font-bold text-blue-900 mb-1">AA</div>
-                    <div className="text-[10px] text-blue-600 font-bold mb-2">調節幅度</div>
-                    <p className="text-xs text-blue-800 leading-relaxed">眼睛能產生的最大調節力。隨年齡增加而減少，是判斷調節不足的核心指標。</p>
-                  </div>
-                  <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                    <div className="font-bold text-blue-900 mb-1">FCC</div>
-                    <div className="text-[10px] text-blue-600 font-bold mb-2">調節反應</div>
-                    <p className="text-xs text-blue-800 leading-relaxed">測量調節滯後 (Lag) 或超前 (Lead)。正常值約 +0.25D 至 +0.75D。</p>
-                  </div>
-                  <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                    <div className="font-bold text-blue-900 mb-1">NRA</div>
-                    <div className="text-[10px] text-blue-600 font-bold mb-2">負相對調節</div>
-                    <p className="text-xs text-blue-800 leading-relaxed">在集合固定下放鬆調節的能力。正常約 +2.00D 至 +2.50D，過低暗示調節過度。</p>
-                  </div>
-                  <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                    <div className="font-bold text-blue-900 mb-1">PRA</div>
-                    <div className="text-[10px] text-blue-600 font-bold mb-2">正相對調節</div>
-                    <p className="text-xs text-blue-800 leading-relaxed">在集合固定下增加調節的能力。正常應小於 -2.37D，過低暗示調節疲勞或不足。</p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Phoria Section */}
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Eye className="text-teal-500" size={20} />
-                  <h3 className="text-lg font-bold text-gray-800">基礎斜位定義 (Phoria)</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-teal-50/50 rounded-xl border border-teal-100">
-                    <div className="font-bold text-teal-900 mb-1">遠方斜位</div>
-                    <div className="text-[10px] text-teal-600 font-bold mb-2">Distance Phoria (6m)</div>
-                    <p className="text-xs text-teal-800 leading-relaxed">
-                      測量眼睛在看遠時的靜止位置。外斜 (Exo) 代表眼睛趨向外展，內斜 (Eso) 代表趨向內收。正常值約為 0.5Δ 外斜至 1Δ 內斜。
-                    </p>
-                  </div>
-                  <div className="p-4 bg-teal-50/50 rounded-xl border border-teal-100">
-                    <div className="font-bold text-teal-900 mb-1">近方斜位</div>
-                    <div className="text-[10px] text-teal-600 font-bold mb-2">Near Phoria (40cm)</div>
-                    <p className="text-xs text-teal-800 leading-relaxed">
-                      測量眼睛在看近時的靜止位置。由於近距離有調節性集合參與，正常值通常比遠方更偏向外斜（約 3Δ 外斜）。
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Vergence Section */}
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Eye className="text-indigo-500" size={20} />
-                  <h3 className="text-lg font-bold text-gray-800">聚散功能異常 (Vergence)</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Distance Priority */}
-                  <div className="space-y-4">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">遠方為主</div>
-                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <div className="font-bold text-indigo-900 mb-1">開散不足</div>
-                      <p className="text-xs text-indigo-800 leading-relaxed">遠方內斜程度顯著大於近方 (相差 5Δ 以上)。</p>
-                    </div>
-                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <div className="font-bold text-indigo-900 mb-1">開散過度</div>
-                      <p className="text-xs text-indigo-800 leading-relaxed">遠方外斜程度顯著大於近方 (相差 5Δ 以上)。</p>
-                    </div>
-                  </div>
-                  {/* Near Priority */}
-                  <div className="space-y-4">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">近方為主</div>
-                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <div className="font-bold text-indigo-900 mb-1">集合不足</div>
-                      <p className="text-xs text-indigo-800 leading-relaxed">近方外斜程度顯著大於遠方 (相差 5Δ 以上)。</p>
-                    </div>
-                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <div className="font-bold text-indigo-900 mb-1">集合過度</div>
-                      <p className="text-xs text-indigo-800 leading-relaxed">近方內斜程度顯著大於遠方 (相差 5Δ 以上)。</p>
-                    </div>
-                  </div>
-                  {/* Basic Types */}
-                  <div className="space-y-4">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">遠近一致</div>
-                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <div className="font-bold text-indigo-900 mb-1">單純內斜</div>
-                      <p className="text-xs text-indigo-800 leading-relaxed">遠近方均為內斜視，且兩者程度相近 (5Δ 以內)。</p>
-                    </div>
-                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <div className="font-bold text-indigo-900 mb-1">單純外斜</div>
-                      <p className="text-xs text-indigo-800 leading-relaxed">遠近方均為外斜視，且兩者程度相近 (5Δ 以內)。</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Calculation Section */}
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Ruler className="text-orange-500" size={20} />
-                  <h3 className="text-lg font-bold text-gray-800">關鍵計算指標 (Calculations)</h3>
-                </div>
-                <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100">
-                  <div className="font-bold text-orange-900 mb-1">AC/A Ratio</div>
-                  <div className="text-[10px] text-orange-600 font-bold mb-2">調節性集合與調節的比值</div>
-                  <p className="text-xs text-orange-800 leading-relaxed">
-                    反映調節對集合系統的驅動力。高 AC/A 易導致集合過度或開散過度；低 AC/A 則與集合不足或開散不足相關。
-                    本系統支援「梯度型」與「計算型」兩種算法。
-                  </p>
-                </div>
-              </section>
-            </div>
-
-          </div>
-        ) : (
-          <>
+        {/* Main Content (Simple or Professional) */}
+        <>
             {/* Box Reset Button */}
             <div className="flex justify-end mb-2">
               <button
@@ -1377,7 +1236,6 @@ export default function App() {
           </div>
         )}
       </>
-    )}
 
         {/* Footer Disclaimer */}
         <div className="mt-12 pt-8 border-t border-gray-200 text-center max-w-2xl mx-auto space-y-1">
