@@ -217,14 +217,12 @@ const calculateDysfunctionType = (data: VisionData) => {
   // AA Norms
   const minAA = 15 - age / 4;
   const maxAA = 25 - 0.4 * age;
-  let aaStatus: 'Normal' | 'Low' | 'High' = 'Normal';
+  let aaStatus: 'Normal' | 'Low' = 'Normal';
   if (aa > 0) {
     if (aa < minAA) aaStatus = 'Low';
-    else if (aa > maxAA) aaStatus = 'High';
   } else if (data.fccValue !== '') {
     // Use FCC as proxy if AA is missing
-    if (fcc > 1.00) aaStatus = 'Low';
-    else if (fcc < 0.25) aaStatus = 'High';
+    if (fcc > 0.75) aaStatus = 'Low';
   }
 
   // 1. Accommodation Diagnosis (Determined first)
@@ -232,32 +230,43 @@ const calculateDysfunctionType = (data: VisionData) => {
   if (!hasAccData) {
     accDiagnosis = "未提供數據";
   } else {
-    const isFCCNormal = data.fccValue !== '' && fcc >= 0 && fcc <= 1.00;
-    const isFCCLag = data.fccValue !== '' && fcc > 1.00;
-    const isFCCLead = data.fccValue !== '' && fcc < 0;
-    const isPRALow = data.near.praValue !== '' && Math.abs(pra) < 1.75;
-    const isNRALow = data.near.nraValue !== '' && nra < 1.75;
+    const isFCCLag = data.fccValue !== '' && fcc > 0.75;
+    const isFCCLead = data.fccValue !== '' && fcc < -0.25;
+    const isFCCNormal = data.fccValue !== '' && fcc >= -0.25 && fcc <= 0.75;
 
-    if (aaStatus === 'Low') {
-      if (isFCCLag) accDiagnosis = "調節不足";
-      else if (isFCCNormal) accDiagnosis = "調節不足 (目前還夠用)";
-      else if (isFCCLead) accDiagnosis = "調節不足 + 調節超前 (使用極限力量)";
-      else accDiagnosis = "調節不足 (AA 偏低)";
-    } else if (aaStatus === 'Normal') {
-      if (isFCCLag) accDiagnosis = "調節遲緩 (有力量但不用)";
-      else if (isFCCLead && nra < 1.75 && data.near.nraValue !== '') accDiagnosis = "調節過度 (一直用力)";
-      else if (isFCCLead) accDiagnosis = "調節超前";
-      else if (nra <= 1.75 && data.near.nraValue !== '' && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節不靈活 (切換卡住)";
-      else if (isFCCNormal && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節疲勞";
-      else if (isFCCNormal) accDiagnosis = "調節正常";
-      else accDiagnosis = "調節正常";
-    } else if (aaStatus === 'High') {
-      if (isFCCLag) accDiagnosis = "調節遲緩 (有力量但不用)";
-      else if (isFCCLead && nra < 1.75 && data.near.nraValue !== '') accDiagnosis = "調節過度 (一直用力)";
-      else if (nra <= 1.75 && data.near.nraValue !== '' && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節不靈活 (切換卡住)";
-      else if (isFCCNormal && pra > -1.75 && data.near.praValue !== '') accDiagnosis = "調節疲勞";
-      else if (isFCCNormal && nra >= 1.75 && data.near.nraValue !== '' && pra <= -1.75 && data.near.praValue !== '') accDiagnosis = "調節過多(調節運用正常)";
-      else accDiagnosis = "調節過度 (AA 偏高)";
+    if (isFCCLag) {
+      if (aaStatus === 'Low') {
+        accDiagnosis = "調節不足";
+      } else {
+        // AA Normal
+        if (data.near.praValue !== '' && pra > -1.25) {
+          accDiagnosis = "功能性調節不足";
+        } else {
+          accDiagnosis = "調節遲緩";
+        }
+      }
+    } else if (isFCCLead) {
+      if (aaStatus === 'Low') {
+        accDiagnosis = "調節不足且過度使用（痙攣）";
+      } else {
+        // AA Normal
+        if (data.near.nraValue !== '' && nra < 1.50) {
+          accDiagnosis = "調節過多";
+        } else {
+          accDiagnosis = "調節過多 (近用過度使用暫時現象)";
+        }
+      }
+    } else if (isFCCNormal) {
+      if (aaStatus === 'Low') {
+        accDiagnosis = "目前正常 (潛在在調節不足)";
+      } else {
+        // AA Normal
+        if (data.near.nraValue !== '' && nra < 1.50 && data.near.praValue !== '' && pra > -1.75) {
+          accDiagnosis = "調節不靈敏";
+        } else {
+          accDiagnosis = "正常";
+        }
+      }
     }
   }
 
@@ -284,17 +293,11 @@ const calculateDysfunctionType = (data: VisionData) => {
       } else if (aaStatus === 'Low') {
         type = "調節不足導致動用更多集合代償";
         desc = "近方內斜視，調節幅度偏低，導致動用更多調節性集合。";
-      } else if (aaStatus === 'High') {
-        type = "調節過度(主因)伴隨更多的調節集合";
-        desc = "近方內斜視，調節幅度偏高。";
       }
     } else if (nearType === 'exo') {
       if (aaStatus === 'Normal') {
         type = "集合不足 (Convergence Insufficiency)";
         desc = "近方外斜視，調節功能基本正常。";
-      } else if (aaStatus === 'High') {
-        type = "集合不足(主因)導致調節過度";
-        desc = "近方外斜視，調節幅度偏高。";
       } else if (aaStatus === 'Low') {
         type = "假性集合不足(調節不足)";
         desc = "近方外斜視，調節幅度偏低。";
@@ -328,7 +331,7 @@ const calculateDysfunctionType = (data: VisionData) => {
         type = "集合過度 (Convergence Excess)";
         desc = "遠近方均為內斜視，且近方內斜程度大於遠方 4Δ 以上。";
       }
-    } else if (distType === 'exo' && nearType === 'eso' && (aca > 5 || aaStatus === 'High')) {
+    } else if (distType === 'exo' && nearType === 'eso' && aca > 5) {
       type = "開散過度 + 調節過度";
       desc = "遠方外斜且近方內斜，伴隨高 AC/A 或高調節幅度。";
     } else if (distType === 'eso' && nearType === 'exo') {
@@ -394,7 +397,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
               {result.inputs.effectiveAA && (
                 <div className="bg-white/5 px-2 py-1 rounded border border-white/10">
                   <span className="text-[9px] text-blue-200 uppercase font-bold block leading-none mb-1">
-                    AA {result.aaStatus === 'Low' ? '(Low)' : result.aaStatus === 'High' ? '(High)' : ''}
+                    AA {result.aaStatus === 'Low' ? '(不足)' : '(正常)'}
                     {result.inputs.isAAFromPRA && <span className="ml-1 text-[8px] opacity-60">(由PRA推估)</span>}
                   </span>
                   <span className="text-xs font-mono font-bold">{result.inputs.effectiveAA} D</span>
@@ -430,8 +433,8 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
               <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
                 <div className="flex justify-between text-[10px] font-bold text-blue-200 uppercase tracking-wider">
                   <span>調節幅度 (AA) 參考值</span>
-                  <span className={`px-1.5 py-0.5 rounded ${result.aaStatus === 'Low' ? 'bg-red-500/40' : result.aaStatus === 'High' ? 'bg-orange-500/40' : 'bg-green-500/40'}`}>
-                    {result.aaStatus === 'Low' ? '偏低' : result.aaStatus === 'High' ? '偏高' : '正常'}
+                  <span className={`px-1.5 py-0.5 rounded ${result.aaStatus === 'Low' ? 'bg-red-500/40' : 'bg-green-500/40'}`}>
+                    {result.aaStatus === 'Low' ? '調節力量不足' : '調節力量正常'}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
