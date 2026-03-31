@@ -258,7 +258,7 @@ const calculateDysfunctionType = (data: VisionData) => {
       }
     } else if (isFCCNormal) {
       if (aaStatus === 'Low') {
-        accDiagnosis = "目前正常 (潛在在調節不足)";
+        accDiagnosis = "目前正常 (潛在調節不足)";
       } else {
         // AA Normal
         if (data.near.nraValue !== '' && nra < 1.50 && data.near.praValue !== '' && pra > -1.75) {
