@@ -18,6 +18,7 @@ interface VisionData {
   fccType: 'plus' | 'minus';
   aa: string;
   blurPoint: string;
+  addValue: string;
   distance: {
     phoriaValue: string;
     phoriaType: 'exo' | 'eso' | 'ortho';
@@ -51,6 +52,7 @@ const getInitialData = (): VisionData => ({
   fccType: 'plus',
   aa: '',
   blurPoint: '',
+  addValue: '',
   distance: {
     phoriaValue: '',
     phoriaType: 'ortho',
@@ -654,8 +656,8 @@ export default function App() {
       if (section === 'general') {
         let finalValue = filteredValue;
         
-        // Auto-format FCC & AA: "200" -> "2.00"
-        if (field === 'fccValue' || field === 'aa') {
+        // Auto-format FCC, AA, ADD: "200" -> "2.00"
+        if (field === 'fccValue' || field === 'aa' || field === 'addValue') {
           const digits = filteredValue.replace(/[^\d]/g, '');
           if (digits.length === 3) {
             finalValue = (parseInt(digits) / 100).toFixed(2);
@@ -665,17 +667,18 @@ export default function App() {
         const newData = { ...prev, [field]: finalValue };
         
         // Auto-calculate AA from Blur Point (Push-up method)
-        if (field === 'blurPoint') {
-          const cm = parseFloat(finalValue);
+        if ((field === 'blurPoint' || field === 'addValue') && aaInputMode === 'push-up') {
+          const cm = parseFloat(field === 'blurPoint' ? finalValue : prev.blurPoint);
+          const add = parseFloat(field === 'addValue' ? finalValue : prev.addValue) || 0;
           if (!isNaN(cm) && cm > 0) {
-            newData.aa = (100 / cm).toFixed(1);
-          } else if (finalValue === '') {
+            newData.aa = (100 / cm - add).toFixed(2);
+          } else if (field === 'blurPoint' && finalValue === '') {
             newData.aa = '';
           }
         }
         
         // Auto-calculate Blur Point from AA (Direct method)
-        if (field === 'aa') {
+        if (field === 'aa' && aaInputMode === 'direct') {
           const d = parseFloat(finalValue);
           if (!isNaN(d) && d > 0) {
             newData.blurPoint = (100 / d).toFixed(1);
@@ -748,19 +751,23 @@ export default function App() {
         'near-phoria-plus1',
         'near-bi-blur', 'near-bi-break', 'near-bi-recovery',
         'near-bo-blur', 'near-bo-break', 'near-bo-recovery',
-        'near-nra',
-        'near-pra',
+        'near-add',
         'near-blur-point',
         'near-aa',
-        'near-fcc'
+        'near-fcc',
+        'near-nra',
+        'near-pra'
       ];
       const currentIndex = inputIds.indexOf(currentId);
-      if (currentIndex !== -1 && currentIndex < inputIds.length - 1) {
-        const nextInput = document.getElementById(inputIds[currentIndex + 1]);
-        if (nextInput) {
-          nextInput.focus();
-          // @ts-ignore
-          nextInput.select();
+      if (currentIndex !== -1) {
+        for (let i = currentIndex + 1; i < inputIds.length; i++) {
+          const nextInput = document.getElementById(inputIds[i]);
+          if (nextInput && nextInput.offsetParent !== null) { // offsetParent is null if hidden
+            nextInput.focus();
+            // @ts-ignore
+            nextInput.select();
+            break;
+          }
         }
       }
     }
@@ -1008,6 +1015,83 @@ export default function App() {
               </SectionHeader>
 
               <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">加入 ADD</span>
+                      <div className="relative">
+                        <input
+                          id="near-add"
+                          type="text"
+                          value={data.addValue}
+                          onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-add')}
+                          placeholder="0.00"
+                          disabled={aaInputMode === 'direct'}
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
+                    </div>
+                    {aaInputMode === 'push-up' ? (
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
+                        <div className="relative">
+                          <input
+                            id="near-blur-point"
+                            type="text"
+                            value={data.blurPoint}
+                            onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
+                            placeholder="例如: 10"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
+                        <div className="relative">
+                          <input
+                            id="near-aa"
+                            type="text"
+                            value={data.aa}
+                            onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
+                            placeholder="例如: 10.0"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
+                        className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                      >
+                        {data.fccType === 'plus' ? '+' : '-'}
+                      </button>
+                      <div className="relative flex-1">
+                        <input
+                          id="near-fcc"
+                          type="text"
+                          value={data.fccValue}
+                          onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
+                          placeholder="0.50"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-xs text-gray-500 font-medium">NRA (+)</span>
@@ -1056,70 +1140,10 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {aaInputMode === 'push-up' ? (
-                    <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
-                      <div className="relative">
-                        <input
-                          id="near-blur-point"
-                          type="text"
-                          value={data.blurPoint}
-                          onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
-                          placeholder="例如: 10"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        自動換算 AA: {data.aa || '0'} D
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
-                      <div className="relative">
-                        <input
-                          id="near-aa"
-                          type="text"
-                          value={data.aa}
-                          onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
-                          placeholder="例如: 10.0"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        自動換算 AA: {data.aa || '0'} D (模糊點: {data.blurPoint || '0'} cm)
-                      </p>
-                    </div>
-                  )}
-                  <div className="space-y-1">
-                    <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
-                        className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
-                      >
-                        {data.fccType === 'plus' ? '+' : '-'}
-                      </button>
-                      <div className="relative flex-1">
-                        <input
-                          id="near-fcc"
-                          type="text"
-                          value={data.fccValue}
-                          onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
-                          placeholder="0.50"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="pt-2 flex justify-end items-center">
+                  <p className="text-sm font-bold text-blue-600">
+                    最終 AA: {data.aa || '0'} D
+                  </p>
                 </div>
               </div>
             </div>
@@ -1359,6 +1383,83 @@ export default function App() {
                     </div>
                   </div>
                   
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">加入 ADD</span>
+                        <div className="relative">
+                          <input
+                            id="near-add"
+                            type="text"
+                            value={data.addValue}
+                            onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-add')}
+                            placeholder="0.00"
+                            disabled={aaInputMode === 'direct'}
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                      </div>
+                      {aaInputMode === 'push-up' ? (
+                        <div className="space-y-1">
+                          <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
+                          <div className="relative">
+                            <input
+                              id="near-blur-point"
+                              type="text"
+                              value={data.blurPoint}
+                              onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
+                              placeholder="例如: 10"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
+                          <div className="relative">
+                            <input
+                              id="near-aa"
+                              type="text"
+                              value={data.aa}
+                              onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
+                              placeholder="例如: 10.0"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
+                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                        >
+                          {data.fccType === 'plus' ? '+' : '-'}
+                        </button>
+                        <div className="relative flex-1">
+                          <input
+                            id="near-fcc"
+                            type="text"
+                            value={data.fccValue}
+                            onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
+                            placeholder="0.50"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="space-y-1">
                       <span className="text-xs text-gray-500 font-medium">NRA (+)</span>
@@ -1407,70 +1508,10 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {aaInputMode === 'push-up' ? (
-                      <div className="space-y-1">
-                        <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
-                        <div className="relative">
-                          <input
-                            id="near-blur-point"
-                            type="text"
-                            value={data.blurPoint}
-                            onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
-                            placeholder="例如: 10"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">
-                          自動換算 AA: {data.aa || '0'} D
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
-                        <div className="relative">
-                          <input
-                            id="near-aa"
-                            type="text"
-                            value={data.aa}
-                            onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
-                            placeholder="例如: 10.0"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">
-                          自動換算 AA: {data.aa || '0'} D (模糊點: {data.blurPoint || '0'} cm)
-                        </p>
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
-                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
-                        >
-                          {data.fccType === 'plus' ? '+' : '-'}
-                        </button>
-                        <div className="relative flex-1">
-                          <input
-                            id="near-fcc"
-                            type="text"
-                            value={data.fccValue}
-                            onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
-                            placeholder="0.50"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="pt-2 flex justify-end items-center">
+                    <p className="text-sm font-bold text-blue-600">
+                      最終 AA: {data.aa || '0'} D
+                    </p>
                   </div>
                 </div>
               </div>
