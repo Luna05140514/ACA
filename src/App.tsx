@@ -240,7 +240,7 @@ const calculateDysfunctionType = (data: VisionData) => {
       } else {
         // AA Normal
         if (data.near.praValue !== '' && pra > -1.25) {
-          accDiagnosis = "功能性調節不足";
+          accDiagnosis = "調節不足";
         } else {
           accDiagnosis = "調節遲緩";
         }
@@ -637,7 +637,7 @@ const PrismInputGroup = ({
 
 export default function App() {
   const [data, setData] = useState<VisionData>(getInitialData());
-  const [mode, setMode] = useState<'simple' | 'professional'>('professional');
+  const [mode, setMode] = useState<'simple' | 'professional'>('simple');
   const [aaInputMode, setAaInputMode] = useState<'push-up' | 'direct'>('push-up');
 
   const handleInputChange = (
@@ -874,97 +874,62 @@ export default function App() {
               </div>
             </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Distance Section (6m) */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-            <SectionHeader 
-              icon={Ruler} 
-              title="遠方數據" 
-              subtitle={mode === 'professional' ? "6 公尺" : ""}
-              hideIcon={mode === 'simple'}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                  遠方斜位
-                </span>
-                <div className="flex gap-2">
-                  <div className="relative w-24">
-                    <input
-                      id="dist-phoria"
-                      type="text"
-                      value={data.distance.phoriaValue}
-                      onChange={(e) => handleInputChange('distance', 'phoriaValue', e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(e, 'dist-phoria')}
-                      placeholder="0"
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
-                    />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
-                  </div>
-                  <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-                    {(['exo', 'eso'] as const).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => handleInputChange('distance', 'phoriaType', type)}
-                        disabled={data.distance.phoriaValue === '0'}
-                        className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
-                          data.distance.phoriaType === type && data.distance.phoriaValue !== '0'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : data.distance.phoriaValue === '0'
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        {type === 'exo' ? 'BI' : 'BO'}
-                      </button>
-                    ))}
-                    {data.distance.phoriaValue === '0' && (
-                      <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
-                        正
-                      </div>
-                    )}
+        {mode === 'simple' ? (
+          <div className="space-y-8">
+            {/* Simple Mode: Phoria Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <SectionHeader 
+                icon={Activity} 
+                title="斜位數據" 
+                subtitle="遠方與近方斜位"
+                hideIcon={true}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                {/* Distance Phoria */}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
+                    遠方斜位
+                  </span>
+                  <div className="flex gap-2">
+                    <div className="relative w-24">
+                      <input
+                        id="dist-phoria"
+                        type="text"
+                        value={data.distance.phoriaValue}
+                        onChange={(e) => handleInputChange('distance', 'phoriaValue', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'dist-phoria')}
+                        placeholder="0"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
+                    </div>
+                    <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                      {(['exo', 'eso'] as const).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => handleInputChange('distance', 'phoriaType', type)}
+                          disabled={data.distance.phoriaValue === '0'}
+                          className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                            data.distance.phoriaType === type && data.distance.phoriaValue !== '0'
+                              ? 'bg-white text-blue-600 shadow-sm'
+                              : data.distance.phoriaValue === '0'
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-gray-400 hover:text-gray-600'
+                          }`}
+                        >
+                          {type === 'exo' ? 'BI' : 'BO'}
+                        </button>
+                      ))}
+                      {data.distance.phoriaValue === '0' && (
+                        <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
+                          正
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </SectionHeader>
-            
-            <div className="space-y-8">
-              {/* Fusion Range */}
-              {mode === 'professional' && (
-                <div className="space-y-6 pt-4 border-t border-gray-100">
-                  <PrismInputGroup 
-                    label="Base In (BI)" 
-                    section="distance" 
-                    field="bi" 
-                    values={data.distance.bi}
-                    norms={{ blur: 'x', break: '7', recovery: '4' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <PrismInputGroup 
-                    label="Base Out (BO)" 
-                    section="distance" 
-                    field="bo" 
-                    values={data.distance.bo}
-                    norms={{ blur: '9', break: '19', recovery: '10' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                </div>
-              )}
 
-              {mode === 'professional' && <AnalysisCard data={data} section="distance" />}
-            </div>
-          </div>
-
-          {/* Near Section (40cm) */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-            <SectionHeader 
-              icon={Activity} 
-              title="近方數據" 
-              subtitle={mode === 'professional' ? "40 公分" : ""}
-              hideIcon={mode === 'simple'}
-            >
-              <div className="flex flex-col gap-2">
+                {/* Near Phoria */}
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
                     近方斜位
@@ -1007,112 +972,43 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
-                    +1.00 斜位
-                  </span>
-                  <div className="flex gap-2">
-                    <div className="relative w-24">
-                      <input
-                        id="near-phoria-plus1"
-                        type="text"
-                        value={data.near.phoriaPlus1Value}
-                        onChange={(e) => handleInputChange('near', 'phoriaPlus1Value', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'near-phoria-plus1')}
-                        placeholder="0"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
-                    </div>
-                    <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-                      {(['exo', 'eso'] as const).map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => handleInputChange('near', 'phoriaPlus1Type', type)}
-                          disabled={data.near.phoriaPlus1Value === '0'}
-                          className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
-                            data.near.phoriaPlus1Type === type && data.near.phoriaPlus1Value !== '0'
-                              ? 'bg-white text-blue-600 shadow-sm'
-                              : data.near.phoriaPlus1Value === '0'
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }`}
-                        >
-                          {type === 'exo' ? 'BI' : 'BO'}
-                        </button>
-                      ))}
-                      {data.near.phoriaPlus1Value === '0' && (
-                        <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
-                          正
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
-            </SectionHeader>
-            
-            <div className="space-y-8">
-              {/* Fusion Range */}
-              {mode === 'professional' && (
-                <div className="space-y-6 pt-4 border-t border-gray-100">
-                  <PrismInputGroup 
-                    label="Base In (BI)" 
-                    section="near" 
-                    field="bi" 
-                    values={data.near.bi}
-                    norms={{ blur: '13', break: '21', recovery: '13' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <PrismInputGroup 
-                    label="Base Out (BO)" 
-                    section="near" 
-                    field="bo" 
-                    values={data.near.bo}
-                    norms={{ blur: '17', break: '21', recovery: '11' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
+            </div>
+
+            {/* Simple Mode: Accommodation Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <SectionHeader 
+                icon={Eye} 
+                title="調節功能" 
+                subtitle="NRA, PRA, AA, FCC"
+                hideIcon={true}
+              >
+                <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                  <button
+                    onClick={() => setAaInputMode('push-up')}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                      aaInputMode === 'push-up'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    推進法
+                  </button>
+                  <button
+                    onClick={() => setAaInputMode('direct')}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                      aaInputMode === 'direct'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    調節幅度
+                  </button>
                 </div>
-              )}
+              </SectionHeader>
 
-              {mode === 'professional' && <AnalysisCard data={data} section="near" />}
-
-              {mode === 'professional' && <ComprehensiveAnalysis data={data} />}
-
-              {/* Accommodation */}
-              <div className="pt-6 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                    調節功能 (Accommodation)
-                  </label>
-                  <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-                    <button
-                      onClick={() => setAaInputMode('push-up')}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                        aaInputMode === 'push-up'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      推進法
-                    </button>
-                    <button
-                      onClick={() => setAaInputMode('direct')}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                        aaInputMode === 'direct'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      調節幅度
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-xs text-gray-500 font-medium">NRA (+)</span>
                     <div className="flex gap-2">
@@ -1160,7 +1056,7 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {aaInputMode === 'push-up' ? (
                     <div className="space-y-1">
@@ -1228,7 +1124,359 @@ export default function App() {
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Distance Section (6m) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <SectionHeader 
+                icon={Ruler} 
+                title="遠方數據" 
+                subtitle="6 公尺"
+                hideIcon={false}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    遠方斜位
+                  </span>
+                  <div className="flex gap-2">
+                    <div className="relative w-24">
+                      <input
+                        id="dist-phoria"
+                        type="text"
+                        value={data.distance.phoriaValue}
+                        onChange={(e) => handleInputChange('distance', 'phoriaValue', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'dist-phoria')}
+                        placeholder="0"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
+                    </div>
+                    <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                      {(['exo', 'eso'] as const).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => handleInputChange('distance', 'phoriaType', type)}
+                          disabled={data.distance.phoriaValue === '0'}
+                          className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                            data.distance.phoriaType === type && data.distance.phoriaValue !== '0'
+                              ? 'bg-white text-blue-600 shadow-sm'
+                              : data.distance.phoriaValue === '0'
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-gray-400 hover:text-gray-600'
+                          }`}
+                        >
+                          {type === 'exo' ? 'BI' : 'BO'}
+                        </button>
+                      ))}
+                      {data.distance.phoriaValue === '0' && (
+                        <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
+                          正
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </SectionHeader>
+              
+              <div className="space-y-8">
+                {/* Fusion Range */}
+                <div className="space-y-6 pt-4 border-t border-gray-100">
+                  <PrismInputGroup 
+                    label="Base In (BI)" 
+                    section="distance" 
+                    field="bi" 
+                    values={data.distance.bi}
+                    norms={{ blur: 'x', break: '7', recovery: '4' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <PrismInputGroup 
+                    label="Base Out (BO)" 
+                    section="distance" 
+                    field="bo" 
+                    values={data.distance.bo}
+                    norms={{ blur: '9', break: '19', recovery: '10' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+
+                <AnalysisCard data={data} section="distance" />
+              </div>
+            </div>
+
+            {/* Near Section (40cm) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <SectionHeader 
+                icon={Activity} 
+                title="近方數據" 
+                subtitle="40 公分"
+                hideIcon={false}
+              >
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
+                      近方斜位
+                    </span>
+                    <div className="flex gap-2">
+                      <div className="relative w-24">
+                        <input
+                          id="near-phoria"
+                          type="text"
+                          value={data.near.phoriaValue}
+                          onChange={(e) => handleInputChange('near', 'phoriaValue', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-phoria')}
+                          placeholder="0"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
+                      </div>
+                      <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                        {(['exo', 'eso'] as const).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => handleInputChange('near', 'phoriaType', type)}
+                            disabled={data.near.phoriaValue === '0'}
+                            className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                              data.near.phoriaType === type && data.near.phoriaValue !== '0'
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : data.near.phoriaValue === '0'
+                                ? 'text-gray-300 cursor-not-allowed'
+                                : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                          >
+                            {type === 'exo' ? 'BI' : 'BO'}
+                          </button>
+                        ))}
+                        {data.near.phoriaValue === '0' && (
+                          <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
+                            正
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
+                      +1.00 斜位
+                    </span>
+                    <div className="flex gap-2">
+                      <div className="relative w-24">
+                        <input
+                          id="near-phoria-plus1"
+                          type="text"
+                          value={data.near.phoriaPlus1Value}
+                          onChange={(e) => handleInputChange('near', 'phoriaPlus1Value', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-phoria-plus1')}
+                          placeholder="0"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
+                      </div>
+                      <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                        {(['exo', 'eso'] as const).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => handleInputChange('near', 'phoriaPlus1Type', type)}
+                            disabled={data.near.phoriaPlus1Value === '0'}
+                            className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                              data.near.phoriaPlus1Type === type && data.near.phoriaPlus1Value !== '0'
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : data.near.phoriaPlus1Value === '0'
+                                ? 'text-gray-300 cursor-not-allowed'
+                                : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                          >
+                            {type === 'exo' ? 'BI' : 'BO'}
+                          </button>
+                        ))}
+                        {data.near.phoriaPlus1Value === '0' && (
+                          <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
+                            正
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SectionHeader>
+              
+              <div className="space-y-8">
+                {/* Fusion Range */}
+                <div className="space-y-6 pt-4 border-t border-gray-100">
+                  <PrismInputGroup 
+                    label="Base In (BI)" 
+                    section="near" 
+                    field="bi" 
+                    values={data.near.bi}
+                    norms={{ blur: '13', break: '21', recovery: '13' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <PrismInputGroup 
+                    label="Base Out (BO)" 
+                    section="near" 
+                    field="bo" 
+                    values={data.near.bo}
+                    norms={{ blur: '17', break: '21', recovery: '11' }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+
+                <AnalysisCard data={data} section="near" />
+
+                <ComprehensiveAnalysis data={data} />
+
+                {/* Accommodation */}
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                      調節功能 (Accommodation)
+                    </label>
+                    <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                      <button
+                        onClick={() => setAaInputMode('push-up')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                          aaInputMode === 'push-up'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        推進法
+                      </button>
+                      <button
+                        onClick={() => setAaInputMode('direct')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                          aaInputMode === 'direct'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        調節幅度
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">NRA (+)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInputChange('near', 'nraType', data.near.nraType === 'plus' ? 'minus' : 'plus')}
+                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                        >
+                          {data.near.nraType === 'plus' ? '+' : '-'}
+                        </button>
+                        <div className="relative flex-1">
+                          <input
+                            id="near-nra"
+                            type="text"
+                            value={data.near.nraValue}
+                            onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
+                            placeholder="2.00"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">PRA (-)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInputChange('near', 'praType', data.near.praType === 'plus' ? 'minus' : 'plus')}
+                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                        >
+                          {data.near.praType === 'plus' ? '+' : '-'}
+                        </button>
+                        <div className="relative flex-1">
+                          <input
+                            id="near-pra"
+                            type="text"
+                            value={data.near.praValue}
+                            onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
+                            placeholder="2.37"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {aaInputMode === 'push-up' ? (
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
+                        <div className="relative">
+                          <input
+                            id="near-blur-point"
+                            type="text"
+                            value={data.blurPoint}
+                            onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
+                            placeholder="例如: 10"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          自動換算 AA: {data.aa || '0'} D
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
+                        <div className="relative">
+                          <input
+                            id="near-aa"
+                            type="text"
+                            value={data.aa}
+                            onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
+                            placeholder="例如: 10.0"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          自動換算 AA: {data.aa || '0'} D (模糊點: {data.blurPoint || '0'} cm)
+                        </p>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
+                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                        >
+                          {data.fccType === 'plus' ? '+' : '-'}
+                        </button>
+                        <div className="relative flex-1">
+                          <input
+                            id="near-fcc"
+                            type="text"
+                            value={data.fccValue}
+                            onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
+                            placeholder="0.50"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {mode === 'simple' && (
           <div className="mt-8">
