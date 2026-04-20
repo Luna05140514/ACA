@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, Ruler, Activity, Save, RotateCcw, Info, AlertTriangle } from 'lucide-react';
 
 interface PrismData {
@@ -13,7 +13,7 @@ interface PrismData {
 }
 
 interface VisionData {
-  age: string;
+  birthDate: string;
   fccValue: string;
   fccType: 'plus' | 'minus';
   aa: string;
@@ -47,7 +47,7 @@ const initialPrismData = (): PrismData => ({
 });
 
 const getInitialData = (): VisionData => ({
-  age: '',
+  birthDate: '',
   fccValue: '',
   fccType: 'plus',
   aa: '',
@@ -78,6 +78,18 @@ const getInitialData = (): VisionData => ({
 const parseValue = (val: string) => {
   const num = parseFloat(val.replace(/[^\d.-]/g, ''));
   return isNaN(num) ? 0 : num;
+};
+
+const calculateAge = (birthDate: string) => {
+  if (!birthDate) return 0;
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return Math.max(0, age);
 };
 
 const calculateAnalysis = (data: VisionData, section: 'distance' | 'near') => {
@@ -186,7 +198,7 @@ const calculateDysfunctionType = (data: VisionData) => {
   const nearRaw = parseValue(data.near.phoriaValue);
   const distType = data.distance.phoriaType;
   const nearType = data.near.phoriaType;
-  const age = parseValue(data.age);
+  const age = calculateAge(data.birthDate);
   let aa = parseValue(data.aa);
   const nra = parseValue(data.near.nraValue) * (data.near.nraType === 'plus' ? 1 : -1);
   const pra = parseValue(data.near.praValue) * (data.near.praType === 'plus' ? 1 : -1);
@@ -266,9 +278,14 @@ const calculateDysfunctionType = (data: VisionData) => {
         if (data.near.nraValue !== '' && nra < 1.50 && data.near.praValue !== '' && pra > -1.75) {
           accDiagnosis = "調節不靈敏";
         } else {
-          accDiagnosis = "正常";
+          accDiagnosis = "正常範圍";
         }
       }
+    } else if (aa > 0) {
+      // Only AA and Age are provided
+      accDiagnosis = aaStatus === 'Low' ? "調節幅度不足" : "調節幅度正常";
+    } else {
+      accDiagnosis = "正常範圍";
     }
   }
 
@@ -431,12 +448,12 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
               )}
             </div>
 
-            {data.age && (
+            {data.birthDate && (
               <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
                 <div className="flex justify-between text-[10px] font-bold text-blue-200 uppercase tracking-wider">
-                  <span>調節幅度 (AA) 參考值</span>
+                  <span>調節幅度 (AA) 參考值 (年齡: {calculateAge(data.birthDate)} 歲)</span>
                   <span className={`px-1.5 py-0.5 rounded ${result.aaStatus === 'Low' ? 'bg-red-500/40' : 'bg-green-500/40'}`}>
-                    {result.aaStatus === 'Low' ? '調節力量不足' : '調節力量正常'}
+                    {result.aaStatus === 'Low' ? '調節幅度不足' : '調節幅度正常'}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -446,7 +463,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
                   </div>
                   <div className="bg-white/5 rounded p-1.5">
                     <div className="text-[9px] opacity-60">平均值</div>
-                    <div className="text-xs font-mono font-bold">{(18.7 - 0.3 * parseValue(data.age)).toFixed(1)}</div>
+                    <div className="text-xs font-mono font-bold">{(18.7 - 0.3 * calculateAge(data.birthDate)).toFixed(1)}</div>
                   </div>
                   <div className="bg-white/5 rounded p-1.5">
                     <div className="text-[9px] opacity-60">最大值</div>
@@ -640,7 +657,28 @@ const PrismInputGroup = ({
 export default function App() {
   const [data, setData] = useState<VisionData>(getInitialData());
   const [mode, setMode] = useState<'simple' | 'professional'>('simple');
-  const [aaInputMode, setAaInputMode] = useState<'push-up' | 'direct'>('push-up');
+  const [aaInputMode, setAaInputMode] = useState<'push-up' | 'push-up-add' | 'direct'>('push-up');
+
+  // Trigger recalculation when accommodation mode switches
+  useEffect(() => {
+    setData(prev => {
+      const newData = { ...prev };
+      
+      if (aaInputMode === 'push-up' || aaInputMode === 'push-up-add') {
+        const cm = parseFloat(prev.blurPoint);
+        const add = aaInputMode === 'push-up-add' ? (parseFloat(prev.addValue) || 0) : 0;
+        if (!isNaN(cm) && cm > 0) {
+          newData.aa = (100 / cm - add).toFixed(2);
+        }
+      } else if (aaInputMode === 'direct') {
+        const d = parseFloat(prev.aa);
+        if (!isNaN(d) && d > 0) {
+          newData.blurPoint = (100 / d).toFixed(1);
+        }
+      }
+      return newData;
+    });
+  }, [aaInputMode]);
 
   const handleInputChange = (
     section: 'distance' | 'near' | 'general',
@@ -649,7 +687,7 @@ export default function App() {
     subField?: keyof PrismData
   ) => {
     // Only filter if it's a numeric field. Type fields (exo/eso, plus/minus) should not be filtered.
-    const isTypeField = field.toLowerCase().includes('type');
+    const isTypeField = field.toLowerCase().includes('type') || field === 'birthDate';
     const filteredValue = isTypeField ? value : value.replace(/－/g, '-').replace(/[^\d.-]/g, '');
 
     setData((prev) => {
@@ -666,10 +704,13 @@ export default function App() {
 
         const newData = { ...prev, [field]: finalValue };
         
-        // Auto-calculate AA from Blur Point (Push-up method)
-        if ((field === 'blurPoint' || field === 'addValue') && aaInputMode === 'push-up') {
+        // Auto-calculate AA from Blur Point (Push-up methods)
+        if ((field === 'blurPoint' || field === 'addValue') && (aaInputMode === 'push-up' || aaInputMode === 'push-up-add')) {
           const cm = parseFloat(field === 'blurPoint' ? finalValue : prev.blurPoint);
-          const add = parseFloat(field === 'addValue' ? finalValue : prev.addValue) || 0;
+          const add = aaInputMode === 'push-up-add' 
+            ? (parseFloat(field === 'addValue' ? finalValue : prev.addValue) || 0)
+            : 0;
+            
           if (!isNaN(cm) && cm > 0) {
             newData.aa = (100 / cm - add).toFixed(2);
           } else if (field === 'blurPoint' && finalValue === '') {
@@ -742,7 +783,7 @@ export default function App() {
     if (e.key === 'Enter') {
       e.preventDefault();
       const inputIds = [
-        'general-age',
+        'general-birthdate',
         'general-pd',
         'dist-phoria',
         'dist-bi-blur', 'dist-bi-break', 'dist-bi-recovery',
@@ -840,20 +881,23 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4 w-full sm:w-auto">
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
-                      受檢者年齡 (Age)
+                      受檢者出生年月
                     </label>
                     <div className="relative">
                       <input
-                        id="general-age"
-                        type="text"
-                        value={data.age}
-                        onChange={(e) => handleInputChange('general', 'age', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'general-age')}
-                        placeholder="例如: 25"
+                        id="general-birthdate"
+                        type="month"
+                        value={data.birthDate}
+                        onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">歲</span>
                     </div>
+                    {data.birthDate && (
+                      <p className="text-[10px] font-bold text-blue-500 ml-1">
+                        年齡: {calculateAge(data.birthDate)} 歲
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
@@ -1002,6 +1046,16 @@ export default function App() {
                     推進法
                   </button>
                   <button
+                    onClick={() => setAaInputMode('push-up-add')}
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                      aaInputMode === 'push-up-add'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    加入 ADD 推進法
+                  </button>
+                  <button
                     onClick={() => setAaInputMode('direct')}
                     className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
                       aaInputMode === 'direct'
@@ -1015,79 +1069,26 @@ export default function App() {
               </SectionHeader>
 
               <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">加入 ADD</span>
-                      <div className="relative">
-                        <input
-                          id="near-add"
-                          type="text"
-                          value={data.addValue}
-                          onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-add')}
-                          placeholder="0.00"
-                          disabled={aaInputMode === 'direct'}
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                      </div>
-                    </div>
-                    {aaInputMode === 'push-up' ? (
-                      <div className="space-y-1">
-                        <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
-                        <div className="relative">
-                          <input
-                            id="near-blur-point"
-                            type="text"
-                            value={data.blurPoint}
-                            onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
-                            placeholder="例如: 10"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
-                        <div className="relative">
-                          <input
-                            id="near-aa"
-                            type="text"
-                            value={data.aa}
-                            onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
-                            placeholder="例如: 10.0"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
-                        className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
-                      >
-                        {data.fccType === 'plus' ? '+' : '-'}
-                      </button>
-                      <div className="relative flex-1">
-                        <input
-                          id="near-fcc"
-                          type="text"
-                          value={data.fccValue}
-                          onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
-                          placeholder="0.50"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                      </div>
+                <div className="space-y-1">
+                  <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
+                      className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                    >
+                      {data.fccType === 'plus' ? '+' : '-'}
+                    </button>
+                    <div className="relative flex-1">
+                      <input
+                        id="near-fcc"
+                        type="text"
+                        value={data.fccValue}
+                        onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
+                        placeholder="0.50"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                     </div>
                   </div>
                 </div>
@@ -1139,6 +1140,58 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-xs text-gray-500 font-medium">加入 ADD</span>
+                    <div className="relative">
+                      <input
+                        id="near-add"
+                        type="text"
+                        value={data.addValue}
+                        onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'near-add')}
+                        placeholder="0.00"
+                        disabled={aaInputMode !== 'push-up-add'}
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                    </div>
+                  </div>
+                  {aaInputMode === 'push-up' || aaInputMode === 'push-up-add' ? (
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
+                      <div className="relative">
+                        <input
+                          id="near-blur-point"
+                          type="text"
+                          value={data.blurPoint}
+                          onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
+                          placeholder="例如: 10"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">調節幅度 (AA)</span>
+                      <div className="relative">
+                        <input
+                          id="near-aa"
+                          type="text"
+                          value={data.aa}
+                          onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
+                          placeholder="例如: 10.0"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="pt-2 flex justify-end items-center">
                   <p className="text-sm font-bold text-blue-600">
@@ -1351,57 +1404,138 @@ export default function App() {
 
                 <AnalysisCard data={data} section="near" />
 
-                <ComprehensiveAnalysis data={data} />
-
                 {/* Accommodation */}
                 <div className="pt-6 border-t border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
                       調節功能 (Accommodation)
                     </label>
-                    <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-                      <button
-                        onClick={() => setAaInputMode('push-up')}
-                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                          aaInputMode === 'push-up'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        推進法
-                      </button>
-                      <button
-                        onClick={() => setAaInputMode('direct')}
-                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                          aaInputMode === 'direct'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        調節幅度
-                      </button>
-                    </div>
+                  <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                    <button
+                      onClick={() => setAaInputMode('push-up')}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                        aaInputMode === 'push-up'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      推進法
+                    </button>
+                    <button
+                      onClick={() => setAaInputMode('push-up-add')}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                        aaInputMode === 'push-up-add'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      加入 ADD 推進法
+                    </button>
+                    <button
+                      onClick={() => setAaInputMode('direct')}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                        aaInputMode === 'direct'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      調節幅度
+                    </button>
+                  </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <span className="text-xs text-gray-500 font-medium">加入 ADD</span>
-                        <div className="relative">
+                  <div className="space-y-6">
+                    <div className="space-y-1">
+                      <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
+                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                        >
+                          {data.fccType === 'plus' ? '+' : '-'}
+                        </button>
+                        <div className="relative flex-1">
                           <input
-                            id="near-add"
+                            id="near-fcc"
                             type="text"
-                            value={data.addValue}
-                            onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-add')}
-                            placeholder="0.00"
-                            disabled={aaInputMode === 'direct'}
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                            value={data.fccValue}
+                            onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
+                            placeholder="0.50"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                         </div>
                       </div>
-                      {aaInputMode === 'push-up' ? (
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">NRA (+)</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleInputChange('near', 'nraType', data.near.nraType === 'plus' ? 'minus' : 'plus')}
+                            className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                          >
+                            {data.near.nraType === 'plus' ? '+' : '-'}
+                          </button>
+                          <div className="relative flex-1">
+                            <input
+                              id="near-nra"
+                              type="text"
+                              value={data.near.nraValue}
+                              onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
+                              placeholder="2.00"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">PRA (-)</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleInputChange('near', 'praType', data.near.praType === 'plus' ? 'minus' : 'plus')}
+                            className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
+                          >
+                            {data.near.praType === 'plus' ? '+' : '-'}
+                          </button>
+                          <div className="relative flex-1">
+                            <input
+                              id="near-pra"
+                              type="text"
+                              value={data.near.praValue}
+                              onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
+                              placeholder="2.37"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500 font-medium">加入 ADD</span>
+                        <div className="relative">
+                        <input
+                          id="near-add"
+                          type="text"
+                          value={data.addValue}
+                          onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-add')}
+                          placeholder="0.00"
+                          disabled={aaInputMode !== 'push-up-add'}
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        </div>
+                      </div>
+                      {aaInputMode === 'push-up' || aaInputMode === 'push-up-add' ? (
                         <div className="space-y-1">
                           <span className="text-xs text-gray-500 font-medium">推進法模糊點</span>
                           <div className="relative">
@@ -1435,78 +1569,6 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">調節反應 (FCC)</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleInputChange('general', 'fccType', data.fccType === 'plus' ? 'minus' : 'plus')}
-                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
-                        >
-                          {data.fccType === 'plus' ? '+' : '-'}
-                        </button>
-                        <div className="relative flex-1">
-                          <input
-                            id="near-fcc"
-                            type="text"
-                            value={data.fccValue}
-                            onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
-                            placeholder="0.50"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">NRA (+)</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleInputChange('near', 'nraType', data.near.nraType === 'plus' ? 'minus' : 'plus')}
-                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
-                        >
-                          {data.near.nraType === 'plus' ? '+' : '-'}
-                        </button>
-                        <div className="relative flex-1">
-                          <input
-                            id="near-nra"
-                            type="text"
-                            value={data.near.nraValue}
-                            onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
-                            placeholder="2.00"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs text-gray-500 font-medium">PRA (-)</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleInputChange('near', 'praType', data.near.praType === 'plus' ? 'minus' : 'plus')}
-                          className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px]"
-                        >
-                          {data.near.praType === 'plus' ? '+' : '-'}
-                        </button>
-                        <div className="relative flex-1">
-                          <input
-                            id="near-pra"
-                            type="text"
-                            value={data.near.praValue}
-                            onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
-                            placeholder="2.37"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                   <div className="pt-2 flex justify-end items-center">
                     <p className="text-sm font-bold text-blue-600">
@@ -1514,6 +1576,8 @@ export default function App() {
                     </p>
                   </div>
                 </div>
+
+                <ComprehensiveAnalysis data={data} />
               </div>
             </div>
           </div>
