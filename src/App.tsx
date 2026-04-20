@@ -815,7 +815,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans relative">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-2 sm:px-6 lg:px-8 font-sans relative">
       <div className="max-w-5xl mx-auto relative">
         {/* Top Warning */}
         <div className="mb-6 text-center">
@@ -877,33 +877,36 @@ export default function App() {
 
             {/* General Info Section */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-                <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
-                  <div className="space-y-1 min-w-[120px] max-w-[160px] sm:max-w-none">
-                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
+              <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8">
+                <div className="flex flex-col gap-6 flex-1 max-w-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
                       受檢者出生年月
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="general-birthdate"
-                        type="month"
-                        value={data.birthDate}
-                        onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
-                      />
+                    </span>
+                    <div className="flex flex-col shrink-0 flex-1">
+                      <div className="relative w-full max-w-[200px]">
+                        <input
+                          id="general-birthdate"
+                          type="month"
+                          value={data.birthDate}
+                          onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
+                          className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
+                        />
+                      </div>
+                      {data.birthDate && (
+                        <p className="text-[10px] font-bold text-blue-500 ml-1 mt-1">
+                          年齡: {calculateAge(data.birthDate)} 歲
+                        </p>
+                      )}
                     </div>
-                    {data.birthDate && (
-                      <p className="text-[10px] font-bold text-blue-500 ml-1">
-                        年齡: {calculateAge(data.birthDate)} 歲
-                      </p>
-                    )}
                   </div>
-                  <div className="space-y-1 min-w-[80px] max-w-[120px] sm:max-w-none">
-                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
                       瞳距 (PD)
-                    </label>
-                    <div className="relative">
+                    </span>
+                    <div className="relative w-full max-w-[140px]">
                       <input
                         id="general-pd"
                         type="text"
@@ -911,14 +914,15 @@ export default function App() {
                         onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
                         placeholder="例如: 64"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">mm</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
                     </div>
                   </div>
                 </div>
+
                 <div className="hidden lg:block flex-1 text-right">
-                  <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                  <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-full uppercase tracking-widest">
                     臨床診斷輔助系統
                   </div>
                 </div>
