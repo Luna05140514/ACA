@@ -815,7 +815,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-2 sm:px-6 lg:px-8 font-sans relative">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans relative">
       <div className="max-w-5xl mx-auto relative">
         {/* Top Warning */}
         <div className="mb-6 text-center">
@@ -876,11 +876,11 @@ export default function App() {
             </div>
 
             {/* General Info Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2 sm:p-8 mb-8">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-                <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
-                  <div className="space-y-1 min-w-[85px] max-w-[100px] sm:max-w-none">
-                    <label className="block text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
+                  <div className="space-y-1 min-w-[120px] max-w-[160px] sm:max-w-none">
+                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
                       受檢者出生年月
                     </label>
                     <div className="relative">
@@ -890,17 +890,17 @@ export default function App() {
                         value={data.birthDate}
                         onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
-                        className="w-full px-1 py-1 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-[10px]"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
                       />
                     </div>
                     {data.birthDate && (
-                      <p className="text-[9px] font-bold text-blue-500 ml-0.5">
-                        {calculateAge(data.birthDate)} 歲
+                      <p className="text-[10px] font-bold text-blue-500 ml-1">
+                        年齡: {calculateAge(data.birthDate)} 歲
                       </p>
                     )}
                   </div>
-                  <div className="space-y-1 min-w-[55px] max-w-[65px] sm:max-w-none">
-                    <label className="block text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
+                  <div className="space-y-1 min-w-[80px] max-w-[120px] sm:max-w-none">
+                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
                       瞳距 (PD)
                     </label>
                     <div className="relative">
@@ -910,10 +910,10 @@ export default function App() {
                         value={data.pd}
                         onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
-                        placeholder="64"
-                        className="w-full px-1 py-1 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-[10px] text-center"
+                        placeholder="例如: 64"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
                       />
-                      <span className="absolute right-0.5 top-1/2 -translate-y-1/2 text-gray-400 text-[6px] font-bold">mm</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">mm</span>
                     </div>
                   </div>
                 </div>
