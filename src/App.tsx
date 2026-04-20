@@ -878,9 +878,9 @@ export default function App() {
             {/* General Info Section */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
               <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-                <div className="grid grid-cols-2 gap-4 w-full sm:w-auto">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
+                  <div className="space-y-1 min-w-[120px] max-w-[160px] sm:max-w-none">
+                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
                       受檢者出生年月
                     </label>
                     <div className="relative">
@@ -890,7 +890,7 @@ export default function App() {
                         value={data.birthDate}
                         onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
                       />
                     </div>
                     {data.birthDate && (
@@ -899,8 +899,8 @@ export default function App() {
                       </p>
                     )}
                   </div>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                  <div className="space-y-1 min-w-[80px] max-w-[120px] sm:max-w-none">
+                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
                       瞳距 (PD)
                     </label>
                     <div className="relative">
@@ -911,9 +911,9 @@ export default function App() {
                         onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
                         placeholder="例如: 64"
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">mm</span>
                     </div>
                   </div>
                 </div>
