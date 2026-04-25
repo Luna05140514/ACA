@@ -399,7 +399,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
       </div>
       
       <div className="flex flex-col gap-8">
-        {/* Step 1: Accommodation Diagnosis (Only if data provided) */}
+            {/* Step 1: Accommodation Diagnosis (Only if data provided) */}
         {result.hasAccData && (
           <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-inner">
             <div className="flex items-center gap-2 mb-3">
@@ -409,45 +409,8 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
               </div>
               <div className="text-xs font-bold text-blue-200 uppercase tracking-widest">調節功能判定</div>
             </div>
-            <div className="text-2xl font-black mb-3 leading-tight">{result.accDiagnosis}</div>
+            <div className="text-2xl font-black mb-1 leading-tight">{result.accDiagnosis}</div>
             
-            {/* Input Values Summary */}
-            <div className="flex flex-wrap gap-3 mb-4">
-              {result.inputs.effectiveAA && (
-                <div className="bg-white/5 px-2 py-1 rounded border border-white/10">
-                  <span className="text-[9px] text-blue-200 uppercase font-bold block leading-none mb-1">
-                    AA {result.aaStatus === 'Low' ? '(不足)' : '(正常)'}
-                    {result.inputs.isAAFromPRA && <span className="ml-1 text-[8px] opacity-60">(由PRA推估)</span>}
-                  </span>
-                  <span className="text-xs font-mono font-bold">{result.inputs.effectiveAA} D</span>
-                </div>
-              )}
-              {result.inputs.fcc && (
-                <div className="bg-white/5 px-2 py-1 rounded border border-white/10">
-                  <span className="text-[9px] text-blue-200 uppercase font-bold block leading-none mb-1">
-                    FCC {result.inputs.fccStatus === 'Lag' ? '(Lag)' : result.inputs.fccStatus === 'Lead' ? '(Lead)' : ''}
-                  </span>
-                  <span className="text-xs font-mono font-bold">{result.inputs.fcc} D</span>
-                </div>
-              )}
-              {result.inputs.nra && (
-                <div className="bg-white/5 px-2 py-1 rounded border border-white/10">
-                  <span className="text-[9px] text-blue-200 uppercase font-bold block leading-none mb-1">
-                    NRA {result.inputs.nraStatus === 'Low' ? '(Low)' : ''}
-                  </span>
-                  <span className="text-xs font-mono font-bold">{result.inputs.nra} D</span>
-                </div>
-              )}
-              {result.inputs.pra && (
-                <div className="bg-white/5 px-2 py-1 rounded border border-white/10">
-                  <span className="text-[9px] text-blue-200 uppercase font-bold block leading-none mb-1">
-                    PRA {result.inputs.praStatus === 'Low' ? '(Low)' : ''}
-                  </span>
-                  <span className="text-xs font-mono font-bold">{result.inputs.pra} D</span>
-                </div>
-              )}
-            </div>
-
             {data.birthDate && (
               <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
                 <div className="flex justify-between text-[10px] font-bold text-blue-200 uppercase tracking-wider">
@@ -656,7 +619,7 @@ const PrismInputGroup = ({
 
 export default function App() {
   const [data, setData] = useState<VisionData>(getInitialData());
-  const [mode, setMode] = useState<'simple' | 'professional'>('simple');
+  const [mode, setMode] = useState<'simple' | 'professional' | 'logic'>('simple');
   const [aaInputMode, setAaInputMode] = useState<'push-up' | 'push-up-add' | 'direct'>('push-up');
 
   // Trigger recalculation when accommodation mode switches
@@ -859,6 +822,18 @@ export default function App() {
                 專業模式
               </span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === 'logic'}
+                onChange={() => setMode('logic')}
+                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <span className={`text-sm font-medium transition-colors ${mode === 'logic' ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                邏輯模式
+              </span>
+            </label>
           </div>
         </div>
 
@@ -875,61 +850,281 @@ export default function App() {
               </button>
             </div>
 
-            {/* General Info Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-              <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8">
-                <div className="flex flex-col gap-6 flex-1 max-w-xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
-                      受檢者出生年月
-                    </span>
-                    <div className="flex flex-col shrink-0 flex-1">
-                      <div className="relative w-full max-w-[200px]">
+            {/* General Info Section - Hidden in Logic mode as requested */}
+            {mode !== 'logic' && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+                <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8">
+                  <div className="flex flex-col gap-6 flex-1 max-w-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
+                        受檢者出生年月
+                      </span>
+                      <div className="flex flex-col shrink-0 flex-1">
+                        <div className="relative w-full max-w-[200px]">
+                          <input
+                            id="general-birthdate"
+                            type="month"
+                            value={data.birthDate}
+                            onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
+                          />
+                        </div>
+                        {data.birthDate && (
+                          <p className="text-[10px] font-bold text-blue-500 ml-1 mt-1">
+                            年齡: {calculateAge(data.birthDate)} 歲
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
+                        瞳距 (PD)
+                      </span>
+                      <div className="relative w-full max-w-[140px]">
                         <input
-                          id="general-birthdate"
-                          type="month"
-                          value={data.birthDate}
-                          onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
+                          id="general-pd"
+                          type="text"
+                          value={data.pd}
+                          onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
+                          placeholder="例如: 64"
                           className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
                         />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
                       </div>
-                      {data.birthDate && (
-                        <p className="text-[10px] font-bold text-blue-500 ml-1 mt-1">
-                          年齡: {calculateAge(data.birthDate)} 歲
-                        </p>
-                      )}
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
-                      瞳距 (PD)
-                    </span>
-                    <div className="relative w-full max-w-[140px]">
-                      <input
-                        id="general-pd"
-                        type="text"
-                        value={data.pd}
-                        onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
-                        placeholder="例如: 64"
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
+                  <div className="hidden lg:block flex-1 text-right">
+                    <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-full uppercase tracking-widest">
+                      臨床診斷輔助系統
                     </div>
-                  </div>
-                </div>
-
-                <div className="hidden lg:block flex-1 text-right">
-                  <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-full uppercase tracking-widest">
-                    臨床診斷輔助系統
                   </div>
                 </div>
               </div>
+            )}
+
+        {mode === 'logic' ? (
+          <div className="space-y-4 animate-in fade-in duration-500 max-w-4xl mx-auto">
+            {/* Accommodation Logic Matrix */}
+            <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center text-gray-900 bg-white">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-blue-600">調節功能判定路徑</h3>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-white border-b border-gray-200">
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/5">1. FCC 結果</th>
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/5">2. AA 狀態</th>
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/4">3. 驗證指標</th>
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider w-1/4">最終診斷</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-xs">
+                    {/* Branch: FCC > 0.75 */}
+                    <tr className="border-b border-gray-100">
+                      <td rowSpan={2} className="p-3 border-r border-gray-100 align-top">
+                        <div className="font-bold text-blue-600 text-xs">FCC {`>`} 0.75</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50">
+                        <div className="font-bold text-gray-700 text-xs">AA 低</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50 text-gray-500 italic text-xs">
+                        調節幅度不足
+                      </td>
+                      <td className="p-3 font-black text-red-600 bg-red-50/10 text-xs">調節不足 (AI)</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="p-3 border-r border-gray-100">
+                        <div className="font-bold text-gray-700 text-xs">AA 正常</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 text-gray-500 text-xs">
+                        PRA {`>`} -1.25 ?
+                      </td>
+                      <td className="p-3 font-black text-xs">
+                        <div className="text-red-500">YES → 調節不足</div>
+                        <div className="text-orange-500">NO → 調節遲緩</div>
+                      </td>
+                    </tr>
+
+                    {/* Branch: FCC < 0.00 */}
+                    <tr className="border-b border-gray-100">
+                      <td rowSpan={2} className="p-3 border-r border-gray-100 align-top">
+                        <div className="font-bold text-indigo-600 text-xs">FCC {`<`} 0.00</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50">
+                        <div className="font-bold text-gray-700 text-xs">AA 低</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50 text-gray-500 italic text-xs">
+                        AA 低且 FCC 超前
+                      </td>
+                      <td className="p-3 font-black text-purple-600 bg-purple-50/10 text-xs">調節且過度(痙攣)</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="p-3 border-r border-gray-100">
+                        <div className="font-bold text-gray-700 text-xs">AA 正常</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 text-gray-500 text-xs">
+                        NRA {`<`} +1.50 ?
+                      </td>
+                      <td className="p-3 font-black text-emerald-600 bg-emerald-50/10 text-xs">調節過多 (AcE)</td>
+                    </tr>
+
+                    {/* Branch: FCC Normal */}
+                    <tr className="border-b border-gray-100">
+                      <td rowSpan={3} className="p-3 border-r border-gray-100 align-top">
+                        <div className="font-bold text-gray-400 text-xs">0.00 ~ +0.75</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50">
+                        <div className="font-bold text-gray-700 text-xs">AA 正常</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50 text-gray-500 text-xs">
+                        NRA & PRA 正常
+                      </td>
+                      <td className="p-3 font-black text-emerald-600 bg-emerald-50/5 text-xs">調節功能正常</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50">
+                        <div className="font-bold text-gray-700 text-xs">AA 正常</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 border-b border-gray-50 text-gray-500 text-xs">
+                        NRA 低 或 PRA 低
+                      </td>
+                      <td className="p-3 font-black text-yellow-600 bg-yellow-50/10 text-xs">調節不靈敏 (AF)</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 border-r border-gray-100">
+                        <div className="font-bold text-gray-700 text-xs">AA 低於最小值</div>
+                      </td>
+                      <td className="p-3 border-r border-gray-100 text-gray-500 text-xs">
+                        FCC 尚未表現滯後
+                      </td>
+                      <td className="p-3 font-black text-orange-500 bg-orange-50/10 text-xs">潛在調節不足</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-        {mode === 'simple' ? (
+            {/* Vergence Logic Matrix */}
+            <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center bg-white">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-indigo-600">聚散功能判定路徑</h3>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-white border-b border-gray-200">
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/4">1. 斜位異常區域</th>
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/4">2. AC/A 比值</th>
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/4">3. 數據對比</th>
+                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider w-1/4">最終診斷</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-xs">
+                    {/* Near Exo Group */}
+                    <tr className="border-b border-gray-100">
+                      <td rowSpan={2} className="p-4 border-r border-gray-100 align-top">
+                        <div className="font-bold text-orange-600 text-sm">近方外斜超出</div>
+                        <div className="text-gray-400 text-[9px] mt-0.5">{`>`} 6Δ Exo</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 border-b border-gray-50">
+                        <div className="font-bold text-gray-700">Low AC/A</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 border-b border-gray-50 text-gray-500">
+                        近方外斜 {`>`} 遠方外斜
+                      </td>
+                      <td className="p-4 font-black text-blue-600 bg-blue-50/10">集合不足 (CI)</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="p-4 border-r border-gray-100">
+                        <div className="font-bold text-gray-700">Normal AC/A</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 text-gray-500">
+                        遠近外斜差異 {`<`} 4Δ
+                      </td>
+                      <td className="p-4 font-black">單純型外斜</td>
+                    </tr>
+
+                    {/* Near Eso Group */}
+                    <tr className="border-b border-gray-100">
+                      <td rowSpan={2} className="p-4 border-r border-gray-100 align-top">
+                        <div className="font-bold text-blue-600 text-sm">近方內斜超出</div>
+                        <div className="text-gray-400 text-[9px] mt-0.5">{`>`} 0Δ Eso</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 border-b border-gray-50">
+                        <div className="font-bold text-gray-700">High AC/A</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 border-b border-gray-50 text-gray-500">
+                        近方內斜 {`>`} 遠方內斜
+                      </td>
+                      <td className="p-4 font-black text-indigo-600 bg-indigo-50/10">集合過度 (CE)</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="p-4 border-r border-gray-100">
+                        <div className="font-bold text-gray-700">Normal AC/A</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 text-gray-500">
+                        遠近內斜差異 {`<`} 4Δ
+                      </td>
+                      <td className="p-4 font-black">單純型內斜</td>
+                    </tr>
+
+                    {/* Distance Exo Group (New: DE) */}
+                    <tr className="border-b border-gray-100">
+                      <td rowSpan={1} className="p-4 border-r border-gray-100 align-top">
+                        <div className="font-bold text-orange-700 text-sm">遠方外斜顯著</div>
+                        <div className="text-gray-400 text-[9px] mt-0.5">{`>`} 1Δ Exo</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100">
+                        <div className="font-bold text-gray-700">High AC/A</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 text-gray-500">
+                        遠方外斜 {`>`} 近方外斜
+                      </td>
+                      <td className="p-4 font-black text-amber-600 bg-amber-50/10">開散過度 (DE)</td>
+                    </tr>
+
+                    {/* Distance Eso Group (New: DI) */}
+                    <tr className="border-b border-gray-100">
+                      <td rowSpan={1} className="p-4 border-r border-gray-100 align-top">
+                        <div className="font-bold text-blue-800 text-sm">遠方內斜顯著</div>
+                        <div className="text-gray-400 text-[9px] mt-0.5">{`>`} 1Δ Eso</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100">
+                        <div className="font-bold text-gray-700">Low AC/A</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 text-gray-500">
+                        遠方內斜 {`>`} 近方內斜
+                      </td>
+                      <td className="p-4 font-black text-cyan-700 bg-cyan-50/10">開散不足 (DI)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Note Section */}
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex items-start gap-4">
+              <RotateCcw className="text-gray-400 shrink-0 mt-1" size={16} />
+              <div className="space-y-1">
+                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Logic Engine Note</h4>
+                <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+                  本系統邏輯基於《Clinical Management of Binocular Vision》。當數據不完整時，系統將採用優先級推斷（例如：使用 PRA 值來校驗 AA 的真實性）。所有判定最終應由專業視光師/醫師簽署確認。
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : mode === 'simple' ? (
           <div className="space-y-8">
             {/* Simple Mode: Phoria Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
