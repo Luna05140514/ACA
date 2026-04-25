@@ -487,6 +487,8 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
     return null;
   };
 
+  const nearAnalysis = calculateAnalysis(data, 'near');
+  const distAnalysis = calculateAnalysis(data, 'distance');
   const managementInfoAcc = getManagementInfo(result.accDiagnosis);
   const managementInfoVerg = getManagementInfo(result.type);
 
@@ -589,14 +591,81 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         )}
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-10 flex flex-col items-center gap-8">
         {hasPhoriaData && (
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center min-w-[200px]">
-            <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">AC/A 比值</div>
-            <div className="text-sm font-mono font-bold">
-              {calculateAnalysis(data, 'near').aca?.message || '-'}
+          <>
+            <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center min-w-[280px]">
+              <div className="text-[10px] uppercase font-black text-blue-200 mb-2 tracking-[0.2em]">AC/A Ratio</div>
+              <div className="text-xl font-mono font-black text-white">
+                {nearAnalysis.aca?.message || '-'}
+              </div>
             </div>
-          </div>
+            
+            {/* The Three Rules - Split into Distance and Near */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 w-full">
+              {/* Distance Column Rules */}
+              <div className="space-y-3">
+                <div className="text-center">
+                  <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.1em] text-blue-200/60 flex items-center justify-center gap-1 sm:gap-2">
+                    <div className="h-[1px] flex-1 bg-white/10"></div>
+                    遠方
+                    <div className="h-[1px] flex-1 bg-white/10"></div>
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/10 text-center">
+                    <div className="text-[8px] uppercase font-bold text-blue-200/60">Sheard's</div>
+                    <div className={`text-[10px] sm:text-[11px] font-bold ${distAnalysis.sheard.met ? 'text-green-300' : 'text-red-300'}`}>
+                      {distAnalysis.sheard.applicable ? distAnalysis.sheard.message : '不適用'}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/10 text-center">
+                    <div className="text-[8px] uppercase font-bold text-blue-200/60">1:1 Rule</div>
+                    <div className={`text-[10px] sm:text-[11px] font-bold ${distAnalysis.oneToOne.met ? 'text-green-300' : 'text-red-300'}`}>
+                      {distAnalysis.oneToOne.applicable ? distAnalysis.oneToOne.message : '不適用'}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/10 text-center">
+                    <div className="text-[8px] uppercase font-bold text-blue-200/60">Percival's</div>
+                    <div className={`text-[10px] sm:text-[11px] font-bold ${distAnalysis.percival.met ? 'text-green-300' : 'text-red-300'}`}>
+                      {distAnalysis.percival.message}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Near Column Rules */}
+              <div className="space-y-3">
+                <div className="text-center">
+                  <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.1em] text-emerald-200/60 flex items-center justify-center gap-1 sm:gap-2">
+                    <div className="h-[1px] flex-1 bg-white/10"></div>
+                    近方
+                    <div className="h-[1px] flex-1 bg-white/10"></div>
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/10 text-center">
+                    <div className="text-[8px] uppercase font-bold text-blue-200/60">Sheard's</div>
+                    <div className={`text-[10px] sm:text-[11px] font-bold ${nearAnalysis.sheard.met ? 'text-green-300' : 'text-red-300'}`}>
+                      {nearAnalysis.sheard.applicable ? nearAnalysis.sheard.message : '不適用'}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/10 text-center">
+                    <div className="text-[8px] uppercase font-bold text-blue-200/60">1:1 Rule</div>
+                    <div className={`text-[10px] sm:text-[11px] font-bold ${nearAnalysis.oneToOne.met ? 'text-green-300' : 'text-red-300'}`}>
+                      {nearAnalysis.oneToOne.applicable ? nearAnalysis.oneToOne.message : '不適用'}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/10 text-center">
+                    <div className="text-[8px] uppercase font-bold text-blue-200/60">Percival's</div>
+                    <div className={`text-[10px] sm:text-[11px] font-bold ${nearAnalysis.percival.met ? 'text-green-300' : 'text-red-300'}`}>
+                      {nearAnalysis.percival.message}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -1231,116 +1300,114 @@ export default function App() {
               </div>
             </div>
 
-            {/* Clinical Symptoms & Management Section (Table Format) */}
-            <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-emerald-600">調節功能異常：臨床症狀與處理概覽</h3>
-                  <p className="text-[10px] text-gray-400 font-bold mt-0.5">Symptoms & Management Reference Table</p>
+            {/* Clinical Symptoms & Management Section (Split into Distance and Near) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Distance Related */}
+              <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-4 border-b border-gray-100 bg-blue-50/50 flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-blue-700">遠方功能異常 (Distance Related)</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <tbody className="text-[11px]">
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-cyan-700 bg-cyan-50/10 w-1/3">開散不足 (DI)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：看遠方複視、頭疼</div>
+                          <div className="text-cyan-800 font-black">處理：遠距加入 BO 處理</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-amber-600 bg-amber-50/10">開散過度 (DE)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：看遠方複視和視覺疲勞</div>
+                          <div className="text-amber-700 font-black">處理：遠距加入 BI 處理或加入負度數</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-orange-600 bg-orange-50/10">單純型外斜視</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：視覺疲勞、遠近複視</div>
+                          <div className="text-orange-700 font-black">處理：加入 BI 處理或負度數</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-blue-800 bg-blue-50/10">單純型內斜視</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：近距工作易疲、偶爾複視</div>
+                          <div className="text-blue-900 font-black">處理：加入 BO 處理</div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/50 border-b border-gray-100">
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider w-[180px]">異常種類</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">常見症狀</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">建議處理方法</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-xs">
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-red-600 bg-red-50/10">調節不足 (AI)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">近距離模糊、視覺疲勞、畏光流淚、頭痛</td>
-                      <td className="p-4 font-bold text-red-700">附加正度數 (Reading Addition)</td>
-                    </tr>
-                    <tr className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                      <td className="p-4 font-bold text-red-600 bg-red-50/10">調節不足且過度 (痙攣)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">閱讀複視、模糊、視覺疲勞、頭痛</td>
-                      <td className="p-4 font-bold text-red-700">附加正度數 (Reading Addition)</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-orange-600 bg-orange-50/10">潛在調節不足</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">症狀不明顯（輕微模糊、疲勞）</td>
-                      <td className="p-4 font-bold text-orange-700">附加正度數</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-orange-600 bg-orange-50/10">調節遲緩 (AE)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">症狀較不明顯（近距離模糊、視覺疲勞）</td>
-                      <td className="p-4 font-bold text-orange-700">附加正度數或多休息改善</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-yellow-600 bg-yellow-50/10">調節不靈敏 (AF)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">遠近均出現不清楚、對焦轉換緩慢</td>
-                      <td className="p-4 font-bold text-yellow-700">調節擺動法訓練 (+/- 2.00鏡)</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-indigo-600 bg-indigo-50/10">調節過多 (AcE)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">閱讀複視、模糊、視覺疲勞、頭痛</td>
-                      <td className="p-4 font-bold text-indigo-700">調節訓練 (遠近清楚交替練習)</td>
-                    </tr>
-                  </tbody>
-                </table>
+
+              {/* Right Column: Near Related */}
+              <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-4 border-b border-gray-100 bg-emerald-50/50 flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-700">近方功能異常 (Near Related)</h3>
+                </div>
+                <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                  <table className="w-full text-left border-collapse">
+                    <tbody className="text-[11px]">
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-blue-600 bg-blue-50/10 w-1/3">集合不足 (CI)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：頭疼、複視、疲勞</div>
+                          <div className="text-blue-700 font-black">處理：近用 BI 處理</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-blue-400 bg-blue-50/5">假性集合不足</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：閱讀疲勞 (因調節不足)</div>
+                          <div className="text-blue-500 font-black">處理：附加正度數</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-indigo-600 bg-indigo-50/10">集合過度 (CE)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：短時閱讀即眼部不適</div>
+                          <div className="text-indigo-700 font-black">處理：近用 BO 或正度數</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-red-600 bg-red-50/10">調節不足 (AI)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：近距離模糊、疲勞</div>
+                          <div className="text-red-700 font-black">處理：附加正度數</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-orange-600 bg-orange-50/10">調節遲緩 (AE)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：近方模糊 (對焦慢)</div>
+                          <div className="text-orange-700 font-black">處理：正度數或休息</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-yellow-600 bg-yellow-50/10">調節不靈敏 (AF)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：遠近對焦轉換緩慢</div>
+                          <div className="text-yellow-700 font-black">處理：反轉鏡訓練</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-indigo-600 bg-indigo-50/10">調節過多 (AcE)</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：閱讀複視、疲勞</div>
+                          <div className="text-indigo-700 font-black">處理：遠近交替訓練</div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            {/* Vergence Symptoms & Management Section */}
-            <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center bg-white">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-indigo-600">聚散功能異常：臨床症狀與處理概覽</h3>
-                  <p className="text-[10px] text-gray-400 font-bold mt-0.5">Vergence Symptoms & Management Reference Table</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/50 border-b border-gray-100">
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider w-[180px]">異常種類</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">常見症狀</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">建議處理方法</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-xs">
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-blue-600 bg-blue-50/10">集合不足 (CI)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">頭疼、複視、模糊、疲勞</td>
-                      <td className="p-4 font-bold text-blue-700">近用加入 BI 處理</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-blue-400 bg-blue-50/5">假性集合不足</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">與集合不足相似 (頭痛、模糊、疲勞)，但主因是調節不足</td>
-                      <td className="p-4 font-bold text-blue-500">處理調節問題 (附加正度數)</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-indigo-600 bg-indigo-50/10">集合過度 (CE)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">短時間閱讀出現眼部不適和頭痛、模糊或複視 (常合併調節過度)</td>
-                      <td className="p-4 font-bold text-indigo-700">近用加入 BO 或加入正度數</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-cyan-700 bg-cyan-50/10">開散不足 (DI)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">看遠方複視、頭疼</td>
-                      <td className="p-4 font-bold text-cyan-800">遠距加入 BO 處理</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-amber-600 bg-amber-50/10">開散過度 (DE)</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">看遠方複視和視覺疲勞</td>
-                      <td className="p-4 font-bold text-amber-700">遠距加入 BI 處理或加入負度數刺激調節</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-orange-600 bg-orange-50/10">單純型外斜視</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">近距離工作易出現眼部緊張或頭疼等；遠近可能視力模糊或複視</td>
-                      <td className="p-4 font-bold text-orange-700">加入 BI 處理或調節沒問題者可加入負度數</td>
-                    </tr>
-                    <tr className="border-b border-gray-50">
-                      <td className="p-4 font-bold text-blue-800 bg-blue-50/10">單純型內斜視</td>
-                      <td className="p-4 text-gray-600 leading-relaxed">近距工作容易疲勞；遠近用眼偶爾視力模糊或複視</td>
-                      <td className="p-4 font-bold text-blue-900">加入 BO 處理</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
             {/* Note Section */}
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex items-start gap-4">
