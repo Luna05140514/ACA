@@ -487,7 +487,8 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
     return null;
   };
 
-  const managementInfo = getManagementInfo(result.accDiagnosis);
+  const managementInfoAcc = getManagementInfo(result.accDiagnosis);
+  const managementInfoVerg = getManagementInfo(result.type);
 
   if (!hasAnyData) return null;
 
@@ -511,16 +512,16 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
             </div>
             <div className="text-2xl font-black mb-1 leading-tight">{result.accDiagnosis}</div>
             
-            {managementInfo && (
+            {managementInfoAcc && (
               <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">常見症狀</p>
-                    <p className="text-xs text-blue-50 font-medium leading-relaxed">{managementInfo.symptoms}</p>
+                    <p className="text-xs text-blue-50 font-medium leading-relaxed">{managementInfoAcc.symptoms}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">建議處理方法</p>
-                    <p className="text-xs text-yellow-300 font-bold leading-relaxed">{managementInfo.treatment}</p>
+                    <p className="text-xs text-yellow-300 font-bold leading-relaxed">{managementInfoAcc.treatment}</p>
                   </div>
                 </div>
               </div>
@@ -566,44 +567,37 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
               <div className="text-xs font-bold text-blue-200 uppercase tracking-widest">聚散功能判定</div>
             </div>
             <div className="text-2xl font-black mb-3 leading-tight">{result.type}</div>
-            <p className="text-sm text-blue-50 leading-relaxed opacity-90">
+            <p className="text-sm text-blue-50 leading-relaxed opacity-90 mb-4">
               {result.desc}
             </p>
+
+            {managementInfoVerg && (
+              <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">常見症狀</p>
+                    <p className="text-xs text-blue-50 font-medium leading-relaxed">{managementInfoVerg.symptoms}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">建議處理方法</p>
+                    <p className="text-xs text-yellow-300 font-bold leading-relaxed">{managementInfoVerg.treatment}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="mt-6 flex justify-center">
         {hasPhoriaData && (
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-            <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">遠近斜位差</div>
-            <div className="text-xl font-mono font-black">
-              {Math.abs(parseValue(data.near.phoriaValue) * (data.near.phoriaType === 'eso' ? 1 : -1) - 
-               parseValue(data.distance.phoriaValue) * (data.distance.phoriaType === 'eso' ? 1 : -1)).toFixed(1)}Δ
-            </div>
-          </div>
-        )}
-        {hasPhoriaData && (
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center min-w-[200px]">
             <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">AC/A 比值</div>
             <div className="text-sm font-mono font-bold">
               {calculateAnalysis(data, 'near').aca?.message || '-'}
             </div>
           </div>
         )}
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">NRA/PRA</div>
-          <div className="text-sm font-mono font-bold">
-            {data.near.nraValue ? (data.near.nraType === 'plus' ? '+' : '-') + data.near.nraValue : '-'}/
-            {data.near.praValue ? (data.near.praType === 'plus' ? '+' : '-') + data.near.praValue : '-'}
-          </div>
-        </div>
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-          <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">FCC 狀態</div>
-          <div className="text-xl font-mono font-black">
-            {data.fccValue ? (data.fccType === 'plus' ? '+' : '-') + data.fccValue : '-'}
-          </div>
-        </div>
       </div>
 
       {/* Result Interpretation Warning */}
