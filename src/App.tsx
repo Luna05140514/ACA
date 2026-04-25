@@ -389,6 +389,106 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
   const hasPhoriaData = !!(data.distance.phoriaValue && data.near.phoriaValue);
   const hasAnyData = hasPhoriaData || result.hasAccData;
 
+  const getManagementInfo = (diagnosis: string) => {
+    // Accommodation mapping
+    if (diagnosis.includes("調節不足且過度")) {
+      return {
+        symptoms: "近距離閱讀經常出現複視、影像模糊、視覺疲勞、頭痛",
+        treatment: "建議附加正度數 (Reading Addition)",
+        type: "danger"
+      };
+    }
+    if (diagnosis.includes("調節不足") && !diagnosis.includes("潛在")) {
+      return {
+        symptoms: "近距離模糊、視覺疲勞、畏光流淚、頭痛",
+        treatment: "建議附加正度數 (Reading Addition)",
+        type: "danger"
+      };
+    }
+    if (diagnosis.includes("潛在調節不足")) {
+      return {
+        symptoms: "症狀較不明顯（近距離模糊、視覺疲勞）",
+        treatment: "建議附加正度數",
+        type: "warning"
+      };
+    }
+    if (diagnosis.includes("調節遲緩")) {
+      return {
+        symptoms: "症狀較不明顯（近距離模糊、視覺疲勞）",
+        treatment: "建議附加正度數，或多休息觀察是否改善",
+        type: "warning"
+      };
+    }
+    if (diagnosis.includes("調節不靈敏")) {
+      return {
+        symptoms: "遠近均出現不清楚、對焦轉換緩慢",
+        treatment: "建議調節擺動法訓練 (使用 +/- 2.00 反轉鏡)",
+        type: "warning"
+      };
+    }
+    if (diagnosis.includes("調節過多") || diagnosis.includes("調節過度")) {
+      return {
+        symptoms: "近距離複視、影像模糊、視覺疲勞、頭痛",
+        treatment: "建議調節訓練 (遠近清楚交替練習)",
+        type: "primary"
+      };
+    }
+
+    // Vergence mapping
+    if (diagnosis.includes("集合不足")) {
+      return {
+        symptoms: "頭疼、複視、模糊、疲勞",
+        treatment: "近用加入 BI 處理",
+        type: "danger"
+      };
+    }
+    if (diagnosis.includes("假性集合不足")) {
+      return {
+        symptoms: "與集合不足相似 (頭痛、模糊、疲勞)，但主因是調節不足",
+        treatment: "建議處理調節問題 (附加正度數)",
+        type: "warning"
+      };
+    }
+    if (diagnosis.includes("集合過度")) {
+      return {
+        symptoms: "短時間閱讀出現眼部不適、頭痛、模糊或複視 (常合併調節過度)",
+        treatment: "近用加入 BO 或加入正度數",
+        type: "danger"
+      };
+    }
+    if (diagnosis.includes("開散不足")) {
+      return {
+        symptoms: "看遠方複視、頭疼",
+        treatment: "遠距加入 BO 處理",
+        type: "primary"
+      };
+    }
+    if (diagnosis.includes("開散過度")) {
+      return {
+        symptoms: "看遠方複視和視覺疲勞",
+        treatment: "遠距加入 BI 處理或加入負度數刺激調節",
+        type: "primary"
+      };
+    }
+    if (diagnosis.includes("單純型外斜視") || diagnosis.includes("單純型外斜")) {
+      return {
+        symptoms: "近距離工作易出現眼部緊張或頭疼等；遠近可能視力模糊或複視",
+        treatment: "加入 BI 處理或調節沒問題者可加入負度數",
+        type: "warning"
+      };
+    }
+    if (diagnosis.includes("單純型內斜視") || diagnosis.includes("單純型內斜")) {
+      return {
+        symptoms: "近距工作容易疲勞；遠近用眼偶爾視力模糊或複視",
+        treatment: "加入 BO 處理",
+        type: "warning"
+      };
+    }
+    return null;
+  };
+
+  const managementInfo = getManagementInfo(result.accDiagnosis);
+
   if (!hasAnyData) return null;
 
   return (
@@ -410,6 +510,21 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
               <div className="text-xs font-bold text-blue-200 uppercase tracking-widest">調節功能判定</div>
             </div>
             <div className="text-2xl font-black mb-1 leading-tight">{result.accDiagnosis}</div>
+            
+            {managementInfo && (
+              <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">常見症狀</p>
+                    <p className="text-xs text-blue-50 font-medium leading-relaxed">{managementInfo.symptoms}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">建議處理方法</p>
+                    <p className="text-xs text-yellow-300 font-bold leading-relaxed">{managementInfo.treatment}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {data.birthDate && (
               <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
@@ -1033,7 +1148,7 @@ export default function App() {
                   <tbody className="text-xs">
                     {/* Near Exo Group */}
                     <tr className="border-b border-gray-100">
-                      <td rowSpan={2} className="p-4 border-r border-gray-100 align-top">
+                      <td rowSpan={3} className="p-4 border-r border-gray-100 align-top">
                         <div className="font-bold text-orange-600 text-sm">近方外斜超出</div>
                         <div className="text-gray-400 text-[9px] mt-0.5">{`>`} 6Δ Exo</div>
                       </td>
@@ -1044,6 +1159,15 @@ export default function App() {
                         近方外斜 {`>`} 遠方外斜
                       </td>
                       <td className="p-4 font-black text-blue-600 bg-blue-50/10">集合不足 (CI)</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 border-r border-gray-100 border-b border-gray-50">
+                        <div className="font-bold text-gray-700">Normal AC/A</div>
+                      </td>
+                      <td className="p-4 border-r border-gray-100 border-b border-gray-50 text-gray-500">
+                        AA 低於最小值
+                      </td>
+                      <td className="p-4 font-black text-blue-400 bg-blue-50/5">假性集合不足</td>
                     </tr>
                     <tr className="border-b border-gray-200">
                       <td className="p-4 border-r border-gray-100">
@@ -1107,6 +1231,117 @@ export default function App() {
                         遠方內斜 {`>`} 近方內斜
                       </td>
                       <td className="p-4 font-black text-cyan-700 bg-cyan-50/10">開散不足 (DI)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Clinical Symptoms & Management Section (Table Format) */}
+            <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-emerald-600">調節功能異常：臨床症狀與處理概覽</h3>
+                  <p className="text-[10px] text-gray-400 font-bold mt-0.5">Symptoms & Management Reference Table</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50/50 border-b border-gray-100">
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider w-[180px]">異常種類</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">常見症狀</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">建議處理方法</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-xs">
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-red-600 bg-red-50/10">調節不足 (AI)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">近距離模糊、視覺疲勞、畏光流淚、頭痛</td>
+                      <td className="p-4 font-bold text-red-700">附加正度數 (Reading Addition)</td>
+                    </tr>
+                    <tr className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                      <td className="p-4 font-bold text-red-600 bg-red-50/10">調節不足且過度 (痙攣)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">閱讀複視、模糊、視覺疲勞、頭痛</td>
+                      <td className="p-4 font-bold text-red-700">附加正度數 (Reading Addition)</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-orange-600 bg-orange-50/10">潛在調節不足</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">症狀不明顯（輕微模糊、疲勞）</td>
+                      <td className="p-4 font-bold text-orange-700">附加正度數</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-orange-600 bg-orange-50/10">調節遲緩 (AE)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">症狀較不明顯（近距離模糊、視覺疲勞）</td>
+                      <td className="p-4 font-bold text-orange-700">附加正度數或多休息改善</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-yellow-600 bg-yellow-50/10">調節不靈敏 (AF)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">遠近均出現不清楚、對焦轉換緩慢</td>
+                      <td className="p-4 font-bold text-yellow-700">調節擺動法訓練 (+/- 2.00鏡)</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-indigo-600 bg-indigo-50/10">調節過多 (AcE)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">閱讀複視、模糊、視覺疲勞、頭痛</td>
+                      <td className="p-4 font-bold text-indigo-700">調節訓練 (遠近清楚交替練習)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Vergence Symptoms & Management Section */}
+            <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center bg-white">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-indigo-600">聚散功能異常：臨床症狀與處理概覽</h3>
+                  <p className="text-[10px] text-gray-400 font-bold mt-0.5">Vergence Symptoms & Management Reference Table</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50/50 border-b border-gray-100">
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider w-[180px]">異常種類</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">常見症狀</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-wider">建議處理方法</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-xs">
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-blue-600 bg-blue-50/10">集合不足 (CI)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">頭疼、複視、模糊、疲勞</td>
+                      <td className="p-4 font-bold text-blue-700">近用加入 BI 處理</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-blue-400 bg-blue-50/5">假性集合不足</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">與集合不足相似 (頭痛、模糊、疲勞)，但主因是調節不足</td>
+                      <td className="p-4 font-bold text-blue-500">處理調節問題 (附加正度數)</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-indigo-600 bg-indigo-50/10">集合過度 (CE)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">短時間閱讀出現眼部不適和頭痛、模糊或複視 (常合併調節過度)</td>
+                      <td className="p-4 font-bold text-indigo-700">近用加入 BO 或加入正度數</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-cyan-700 bg-cyan-50/10">開散不足 (DI)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">看遠方複視、頭疼</td>
+                      <td className="p-4 font-bold text-cyan-800">遠距加入 BO 處理</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-amber-600 bg-amber-50/10">開散過度 (DE)</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">看遠方複視和視覺疲勞</td>
+                      <td className="p-4 font-bold text-amber-700">遠距加入 BI 處理或加入負度數刺激調節</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-orange-600 bg-orange-50/10">單純型外斜視</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">近距離工作易出現眼部緊張或頭疼等；遠近可能視力模糊或複視</td>
+                      <td className="p-4 font-bold text-orange-700">加入 BI 處理或調節沒問題者可加入負度數</td>
+                    </tr>
+                    <tr className="border-b border-gray-50">
+                      <td className="p-4 font-bold text-blue-800 bg-blue-50/10">單純型內斜視</td>
+                      <td className="p-4 text-gray-600 leading-relaxed">近距工作容易疲勞；遠近用眼偶爾視力模糊或複視</td>
+                      <td className="p-4 font-bold text-blue-900">加入 BO 處理</td>
                     </tr>
                   </tbody>
                 </table>
