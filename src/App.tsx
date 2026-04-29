@@ -393,43 +393,43 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
     // Accommodation mapping
     if (diagnosis.includes("調節不足且過度")) {
       return {
-        symptoms: "近距離閱讀經常出現複視、影像模糊、視覺疲勞、頭痛",
-        treatment: "建議附加正度數 (Reading Addition)",
+        symptoms: "長時間近距離工作疲勞、想睡；看遠近易模糊，看近更明顯且無法集中；頭痛、眼周牽扯感；閱讀字體移動感；眼乾、畏光、流淚",
+        treatment: "1.屈光矯正 2.加入正度數 3.推進訓練 (Brock線)",
         type: "danger"
       };
     }
     if (diagnosis.includes("調節不足") && !diagnosis.includes("潛在")) {
       return {
-        symptoms: "近距離模糊、視覺疲勞、畏光流淚、頭痛",
-        treatment: "建議附加正度數 (Reading Addition)",
+        symptoms: "長時間近距離工作疲勞、想睡；看遠近易模糊，看近更明顯且無法集中；頭痛、眼周牽扯感；閱讀字體移動感；眼乾、畏光、流淚",
+        treatment: "1.屈光矯正 2.加入正度數 3.推進訓練 (Brock線)",
         type: "danger"
       };
     }
     if (diagnosis.includes("潛在調節不足")) {
       return {
-        symptoms: "症狀較不明顯（近距離模糊、視覺疲勞）",
-        treatment: "建議附加正度數",
+        symptoms: "症狀較不明顯（輕微模糊、疲勞），但可能出現調節不足前兆",
+        treatment: "1.屈光矯正 2.加入正度數",
         type: "warning"
       };
     }
     if (diagnosis.includes("調節遲緩")) {
       return {
-        symptoms: "症狀較不明顯（近距離模糊、視覺疲勞）",
-        treatment: "建議附加正度數，或多休息觀察是否改善",
+        symptoms: "近方模糊（對焦慢）、視覺疲勞",
+        treatment: "1.屈光矯正 2.加入正度數或多休息",
         type: "warning"
       };
     }
     if (diagnosis.includes("調節不靈敏")) {
       return {
-        symptoms: "遠近均出現不清楚、對焦轉換緩慢",
-        treatment: "建議調節擺動法訓練 (使用 +/- 2.00 反轉鏡)",
+        symptoms: "遠近切換困難、對焦緩慢；閱讀困難、注意力下降、嗜睡；頭痛、眼脹；閱讀字體有移動感",
+        treatment: "1.屈光矯正 2.反轉鏡訓練、遠近字母法",
         type: "warning"
       };
     }
     if (diagnosis.includes("調節過多") || diagnosis.includes("調節過度")) {
       return {
-        symptoms: "近距離複視、影像模糊、視覺疲勞、頭痛",
-        treatment: "建議調節訓練 (遠近清楚交替練習)",
+        symptoms: "畏光；長時間看近後遠近均模糊（晚上明顯）；近距工作後頭痛、眼脹；疲勞後遠近切換困難",
+        treatment: "1.屈光矯正 2.加入正度數",
         type: "primary"
       };
     }
@@ -437,22 +437,22 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
     // Vergence mapping
     if (diagnosis.includes("集合不足")) {
       return {
-        symptoms: "頭疼、複視、模糊、疲勞",
-        treatment: "近用加入 BI 處理",
+        symptoms: "看近複視、模糊、聚焦困難；眼部緊張感、酸脹；閱讀後眼周疼痛；無法集中；傾向避免看近",
+        treatment: "1.屈光矯正 2.加入正度數（可改善調節不足） 3.近用 BI 4.推進訓練、Brock線",
         type: "danger"
       };
     }
     if (diagnosis.includes("假性集合不足")) {
       return {
-        symptoms: "與集合不足相似 (頭痛、模糊、疲勞)，但主因是調節不足",
-        treatment: "建議處理調節問題 (附加正度數)",
+        symptoms: "症狀與集合不足相似，但主因是調節不足導致不願動用調節性集合",
+        treatment: "1.屈光矯正 2.加入正度數 3.調節功能訓練",
         type: "warning"
       };
     }
     if (diagnosis.includes("集合過度")) {
       return {
-        symptoms: "短時間閱讀出現眼部不適、頭痛、模糊或複視 (常合併調節過度)",
-        treatment: "近用加入 BO 或加入正度數",
+        symptoms: "複視、模糊（遠近均可能）；疲勞後頭部傾斜；聚焦過度感（短時閱讀即疲勞）；晚間眼眶上方疼痛；傾向避免看近（或拿極近）；想閉眼",
+        treatment: "1.屈光矯正 2.加入正度數 3.近用加入 BO",
         type: "danger"
       };
     }
@@ -470,14 +470,14 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         type: "primary"
       };
     }
-    if (diagnosis.includes("單純型外斜視") || diagnosis.includes("單純型外斜")) {
+    if (diagnosis.includes("單純外斜視") || diagnosis.includes("單純外斜")) {
       return {
         symptoms: "近距離工作易出現眼部緊張或頭疼等；遠近可能視力模糊或複視",
         treatment: "加入 BI 處理或調節沒問題者可加入負度數",
         type: "warning"
       };
     }
-    if (diagnosis.includes("單純型內斜視") || diagnosis.includes("單純型內斜")) {
+    if (diagnosis.includes("單純內斜視") || diagnosis.includes("單純內斜")) {
       return {
         symptoms: "近距工作容易疲勞；遠近用眼偶爾視力模糊或複視",
         treatment: "加入 BO 處理",
@@ -1350,56 +1350,56 @@ export default function App() {
                   <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-700">近方功能異常 (Near Related)</h3>
                 </div>
-                <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                   <table className="w-full text-left border-collapse">
                     <tbody className="text-[11px]">
                       <tr className="border-b border-gray-50">
-                        <td className="p-3 font-bold text-blue-600 bg-blue-50/10 w-1/3">集合不足 (CI)</td>
+                        <td className="p-3 font-bold text-blue-600 bg-blue-50/10 w-1/4">集合不足 (CI)</td>
                         <td className="p-3 text-gray-500">
-                          <div className="font-bold text-gray-700 mb-1">症狀：頭疼、複視、疲勞</div>
-                          <div className="text-blue-700 font-black">處理：近用 BI 處理</div>
+                          <div className="font-bold text-gray-700 mb-1">症狀：看近複視模糊、聚焦困難、酸脹、周圍疼痛、無法集中</div>
+                          <div className="text-blue-700 font-black">處理：屈光矯正、正度數、BI、推進訓練 (Brock線)</div>
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
                         <td className="p-3 font-bold text-blue-400 bg-blue-50/5">假性集合不足</td>
                         <td className="p-3 text-gray-500">
-                          <div className="font-bold text-gray-700 mb-1">症狀：閱讀疲勞 (因調節不足)</div>
-                          <div className="text-blue-500 font-black">處理：附加正度數</div>
+                          <div className="font-bold text-gray-700 mb-1">症狀：閱讀疲勞 (主因是調節不足)</div>
+                          <div className="text-blue-500 font-black">處理：屈光矯正、附加正度數</div>
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
                         <td className="p-3 font-bold text-indigo-600 bg-indigo-50/10">集合過度 (CE)</td>
                         <td className="p-3 text-gray-500">
-                          <div className="font-bold text-gray-700 mb-1">症狀：短時閱讀即眼部不適</div>
-                          <div className="text-indigo-700 font-black">處理：近用 BO 或正度數</div>
+                          <div className="font-bold text-gray-700 mb-1">症狀：複視模糊(遠近均可)、頭部傾斜、晚間眼眶疼痛、想閉眼</div>
+                          <div className="text-indigo-700 font-black">處理：屈光矯正、加入正度數、近用 BO</div>
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
                         <td className="p-3 font-bold text-red-600 bg-red-50/10">調節不足 (AI)</td>
                         <td className="p-3 text-gray-500">
-                          <div className="font-bold text-gray-700 mb-1">症狀：近距離模糊、疲勞</div>
-                          <div className="text-red-700 font-black">處理：附加正度數</div>
+                          <div className="font-bold text-gray-700 mb-1">症狀：近工作疲勞想睡、看遠近易模糊、字體移動感、眼乾畏光</div>
+                          <div className="text-red-700 font-black">處理：屈光矯正、正度數、推進訓練 (Brock線)</div>
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
                         <td className="p-3 font-bold text-orange-600 bg-orange-50/10">調節遲緩 (AE)</td>
                         <td className="p-3 text-gray-500">
-                          <div className="font-bold text-gray-700 mb-1">症狀：近方模糊 (對焦慢)</div>
-                          <div className="text-orange-700 font-black">處理：正度數或休息</div>
+                          <div className="font-bold text-gray-700 mb-1">症狀：近方模糊 (對焦慢)、閱讀疲勞</div>
+                          <div className="text-orange-700 font-black">處理：屈光矯正、正度數或休息</div>
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
                         <td className="p-3 font-bold text-yellow-600 bg-yellow-50/10">調節不靈敏 (AF)</td>
                         <td className="p-3 text-gray-500">
-                          <div className="font-bold text-gray-700 mb-1">症狀：遠近對焦轉換緩慢</div>
-                          <div className="text-yellow-700 font-black">處理：反轉鏡訓練</div>
+                          <div className="font-bold text-gray-700 mb-1">症狀：遠近切換困難、注意力下降、嗜睡、眼脹、字體移動</div>
+                          <div className="text-yellow-700 font-black">處理：屈光矯正、反轉鏡訓練、遠近字母法</div>
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
                         <td className="p-3 font-bold text-indigo-600 bg-indigo-50/10">調節過多 (AcE)</td>
                         <td className="p-3 text-gray-500">
-                          <div className="font-bold text-gray-700 mb-1">症狀：閱讀複視、疲勞</div>
-                          <div className="text-indigo-700 font-black">處理：遠近交替訓練</div>
+                          <div className="font-bold text-gray-700 mb-1">症狀：畏光、遠近均模糊(晚上明顯)、眼脹、切換困難</div>
+                          <div className="text-indigo-700 font-black">處理：屈光矯正、加入正度數</div>
                         </td>
                       </tr>
                     </tbody>
