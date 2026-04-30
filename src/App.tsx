@@ -261,7 +261,7 @@ const calculateDysfunctionType = (data: VisionData) => {
       }
     } else if (isFCCLead) {
       if (aaStatus === 'Low') {
-        accDiagnosis = "調節不足且過度使用（痙攣）";
+        accDiagnosis = "調節力不足且過度使用（痙攣）";
       } else {
         // AA Normal
         if (data.near.nraValue !== '' && nra < 1.50) {
@@ -299,27 +299,27 @@ const calculateDysfunctionType = (data: VisionData) => {
   } else if (!isDistNormal && isNearNormal) {
     if (distType === 'exo') {
       type = "開散過度 (Divergence Excess)";
-      desc = "遠方外斜視超出標準，近方正常。";
+      desc = "遠方外斜位超出標準，近方正常。";
     } else if (distType === 'eso') {
       type = "開散不足 (Divergence Insufficiency)";
-      desc = "遠方內斜視超出標準，近方正常。";
+      desc = "遠方內斜位超出標準，近方正常。";
     }
   } else if (isDistNormal && !isNearNormal) {
     if (nearType === 'eso') {
       if (aaStatus === 'Normal') {
         type = "集合過度 (Convergence Excess)";
-        desc = "近方內斜視，調節功能基本正常。";
+        desc = "近方內斜位，調節功能基本正常。";
       } else if (aaStatus === 'Low') {
         type = "調節不足導致動用更多集合代償";
-        desc = "近方內斜視，調節幅度偏低，導致動用更多調節性集合。";
+        desc = "近方內斜位，調節幅度偏低，導致動用更多調節性集合。";
       }
     } else if (nearType === 'exo') {
       if (aaStatus === 'Normal') {
         type = "集合不足 (Convergence Insufficiency)";
-        desc = "近方外斜視，調節功能基本正常。";
+        desc = "近方外斜位，調節功能基本正常。";
       } else if (aaStatus === 'Low') {
         type = "假性集合不足(調節不足)";
-        desc = "近方外斜視，調節幅度偏低。";
+        desc = "近方外斜位，調節幅度偏低。";
       }
     }
   } else {
@@ -330,25 +330,25 @@ const calculateDysfunctionType = (data: VisionData) => {
 
     if (distType === 'exo' && nearType === 'exo') {
       if (diff <= 4) {
-        type = "單純外斜視 (Basic Exophoria)";
-        desc = "遠近方均為外斜視且差異在 4Δ 以內。";
+        type = "單純外斜位 (Basic Exophoria)";
+        desc = "遠近方均為外斜位且差異在 4Δ 以內。";
       } else if (distRaw > nearRaw) {
         type = "開散過度 (Divergence Excess)";
-        desc = "遠近方均為外斜視，且遠方外斜程度大於近方 4Δ 以上。";
+        desc = "遠近方均為外斜位，且遠方外斜程度大於近方 4Δ 以上。";
       } else {
         type = "集合不足 (Convergence Insufficiency)";
-        desc = "遠近方均為外斜視，且近方外斜程度大於遠方 4Δ 以上。";
+        desc = "遠近方均為外斜位，且近方外斜程度大於遠方 4Δ 以上。";
       }
     } else if (distType === 'eso' && nearType === 'eso') {
       if (diff <= 4) {
-        type = "單純內斜視 (Basic Esophoria)";
-        desc = "遠近方均為內斜視且差異在 4Δ 以內。";
+        type = "單純內斜位 (Basic Esophoria)";
+        desc = "遠近方均為內斜位且差異在 4Δ 以內。";
       } else if (distRaw > nearRaw) {
         type = "開散不足 (Divergence Insufficiency)";
-        desc = "遠近方均為內斜視，且遠方內斜程度大於近方 4Δ 以上。";
+        desc = "遠近方均為內斜位，且遠方內斜程度大於近方 4Δ 以上。";
       } else {
         type = "集合過度 (Convergence Excess)";
-        desc = "遠近方均為內斜視，且近方內斜程度大於遠方 4Δ 以上。";
+        desc = "遠近方均為內斜位，且近方內斜程度大於遠方 4Δ 以上。";
       }
     } else if (distType === 'exo' && nearType === 'eso' && aca > 5) {
       type = "開散過度 + 調節過度";
@@ -391,7 +391,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
 
   const getManagementInfo = (diagnosis: string) => {
     // Accommodation mapping
-    if (diagnosis.includes("調節不足且過度")) {
+    if (diagnosis.includes("調節力不足且過度使用")) {
       return {
         symptoms: "長時間近距離工作疲勞、想睡；看遠近易模糊，看近更明顯且無法集中；頭痛、眼周牽扯感；閱讀字體移動感；眼乾、畏光、流淚",
         treatment: "1.屈光矯正 2.加入正度數 3.推進訓練 (Brock線)",
@@ -470,14 +470,14 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         type: "primary"
       };
     }
-    if (diagnosis.includes("單純外斜視") || diagnosis.includes("單純外斜")) {
+    if (diagnosis.includes("單純外斜位") || diagnosis.includes("單純外斜")) {
       return {
         symptoms: "近距離工作易出現眼部緊張或頭疼等；遠近可能視力模糊或複視",
         treatment: "加入 BI 處理或調節沒問題者可加入負度數",
         type: "warning"
       };
     }
-    if (diagnosis.includes("單純內斜視") || diagnosis.includes("單純內斜")) {
+    if (diagnosis.includes("單純內斜位") || diagnosis.includes("單純內斜")) {
       return {
         symptoms: "近距工作容易疲勞；遠近用眼偶爾視力模糊或複視",
         treatment: "加入 BO 處理",
@@ -1142,7 +1142,7 @@ export default function App() {
                       <td className="p-3 border-r border-gray-100 border-b border-gray-50 text-gray-500 italic text-xs">
                         AA 低且 FCC 超前
                       </td>
-                      <td className="p-3 font-black text-purple-600 bg-purple-50/10 text-xs">調節且過度(痙攣)</td>
+                      <td className="p-3 font-black text-purple-600 bg-purple-50/10 text-xs">調節力不足且過度使用(痙攣)</td>
                     </tr>
                     <tr className="border-b border-gray-200">
                       <td className="p-3 border-r border-gray-100">
@@ -1326,14 +1326,14 @@ export default function App() {
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
-                        <td className="p-3 font-bold text-orange-600 bg-orange-50/10">單純型外斜視</td>
+                        <td className="p-3 font-bold text-orange-600 bg-orange-50/10">單純型外斜位</td>
                         <td className="p-3 text-gray-500">
                           <div className="font-bold text-gray-700 mb-1">症狀：視覺疲勞、遠近複視</div>
                           <div className="text-orange-700 font-black">處理：加入 BI 處理或負度數</div>
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
-                        <td className="p-3 font-bold text-blue-800 bg-blue-50/10">單純型內斜視</td>
+                        <td className="p-3 font-bold text-blue-800 bg-blue-50/10">單純型內斜位</td>
                         <td className="p-3 text-gray-500">
                           <div className="font-bold text-gray-700 mb-1">症狀：近距工作易疲、偶爾複視</div>
                           <div className="text-blue-900 font-black">處理：加入 BO 處理</div>
