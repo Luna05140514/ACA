@@ -754,7 +754,7 @@ const DataTable = ({
                   onChange={(e) => onInputChange(section, 'phoriaValue', e.target.value)}
                   onKeyDown={(e) => onKeyDown(e, `${section}-phoria`)}
                   placeholder="0"
-                  className="w-full px-2 py-1.5 bg-gray-50/50 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center font-mono text-sm placeholder:text-gray-100"
+                  className="w-full px-2 py-1.5 bg-gray-50/50 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center font-mono text-sm placeholder:text-gray-400"
                 />
                 <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">Δ</span>
               </div>
@@ -790,7 +790,7 @@ const DataTable = ({
                   onChange={(e) => !isDistBIBlur && onInputChange(section, 'bi', e.target.value, sub)}
                   onKeyDown={(e) => !isDistBIBlur && onKeyDown(e, `${section}-bi-${sub}`)}
                   placeholder={norms.bi[sub]}
-                  className={`w-full py-3 bg-transparent text-center font-mono text-sm outline-none transition-colors placeholder:text-gray-100 ${
+                  className={`w-full py-3 bg-transparent text-center font-mono text-sm outline-none transition-colors placeholder:text-gray-400 ${
                     isDistBIBlur 
                       ? 'text-gray-400 cursor-not-allowed font-bold' 
                       : 'hover:bg-gray-50/50 focus:bg-blue-50/30 focus:ring-0'
@@ -811,7 +811,7 @@ const DataTable = ({
                 onChange={(e) => onInputChange(section, 'bo', e.target.value, sub)}
                 onKeyDown={(e) => onKeyDown(e, `${section}-bo-${sub}`)}
                 placeholder={norms.bo[sub]}
-                className="w-full py-3 bg-transparent hover:bg-gray-50/50 focus:bg-indigo-50/30 text-center font-mono text-sm focus:ring-0 outline-none transition-colors placeholder:text-gray-100"
+                className="w-full py-3 bg-transparent hover:bg-gray-50/50 focus:bg-indigo-50/30 text-center font-mono text-sm focus:ring-0 outline-none transition-colors placeholder:text-gray-400"
               />
             </td>
           ))}
@@ -1102,7 +1102,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
                           placeholder="64"
-                          className="w-20 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm placeholder:text-gray-100"
+                          className="w-20 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm placeholder:text-gray-400"
                         />
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">mm</span>
                       </div>
@@ -1479,7 +1479,7 @@ export default function App() {
                         onChange={(e) => handleInputChange('distance', 'phoriaValue', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'dist-phoria')}
                         placeholder="0"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-200"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-400"
                       />
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
                     </div>
@@ -1523,7 +1523,7 @@ export default function App() {
                         onChange={(e) => handleInputChange('near', 'phoriaValue', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'near-phoria')}
                         placeholder="0"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-200"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-400"
                       />
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
                     </div>
@@ -1615,7 +1615,7 @@ export default function App() {
                         onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
                         placeholder="0.50"
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                     </div>
@@ -1640,7 +1640,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
                           placeholder="2.00"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                       </div>
@@ -1663,7 +1663,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
                           placeholder="2.37"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                       </div>
@@ -1683,7 +1683,7 @@ export default function App() {
                         onKeyDown={(e) => handleKeyDown(e, 'near-add')}
                         placeholder="0.00"
                         disabled={aaInputMode !== 'push-up-add'}
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                     </div>
@@ -1699,7 +1699,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
                           placeholder="例如: 10"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
                       </div>
@@ -1715,7 +1715,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
                           placeholder="例如: 10.0"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                       </div>
@@ -1880,7 +1880,7 @@ export default function App() {
                             onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
                             placeholder="0.50"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                         </div>
@@ -1905,7 +1905,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
                               placeholder="2.00"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                           </div>
@@ -1928,7 +1928,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
                               placeholder="2.37"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                           </div>
@@ -1948,7 +1948,7 @@ export default function App() {
                           onKeyDown={(e) => handleKeyDown(e, 'near-add')}
                           placeholder="0.00"
                           disabled={aaInputMode !== 'push-up-add'}
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                         />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                         </div>
@@ -1964,7 +1964,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
                               placeholder="例如: 10"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
                           </div>
@@ -1980,7 +1980,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
                               placeholder="例如: 10.0"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                           </div>
