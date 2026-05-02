@@ -248,7 +248,11 @@ const calculateDysfunctionType = (data: VisionData) => {
     const isFCCLead = data.fccValue !== '' && fcc < 0;
     const isFCCNormal = data.fccValue !== '' && fcc >= 0 && fcc <= 0.75;
 
-    if (isFCCLag) {
+    if (data.near.nraValue !== '' && nra < 1.50 && data.near.praValue !== '' && pra > -1.75) {
+      accDiagnosis = "調節不靈敏";
+    } else if (isFCCNormal && data.near.praValue !== '' && pra > -1.25) {
+      accDiagnosis = "潛在調節不足";
+    } else if (isFCCLag) {
       if (aaStatus === 'Low') {
         accDiagnosis = "調節不足";
       } else {
@@ -275,11 +279,7 @@ const calculateDysfunctionType = (data: VisionData) => {
         accDiagnosis = "目前正常 (潛在調節不足)";
       } else {
         // AA Normal
-        if (data.near.nraValue !== '' && nra < 1.50 && data.near.praValue !== '' && pra > -1.75) {
-          accDiagnosis = "調節不靈敏";
-        } else {
-          accDiagnosis = "正常範圍";
-        }
+        accDiagnosis = "正常範圍";
       }
     } else if (aa > 0) {
       // Only AA and Age are provided
@@ -308,7 +308,7 @@ const calculateDysfunctionType = (data: VisionData) => {
     if (nearType === 'eso') {
       if (aaStatus === 'Normal') {
         type = "集合過度 (Convergence Excess)";
-        desc = "近方內斜位，調節功能基本正常。";
+        desc = "近方內斜位，調節系統基本正常。";
       } else if (aaStatus === 'Low') {
         type = "調節不足導致動用更多集合代償";
         desc = "近方內斜位，調節幅度偏低，導致動用更多調節性集合。";
@@ -316,7 +316,7 @@ const calculateDysfunctionType = (data: VisionData) => {
     } else if (nearType === 'exo') {
       if (aaStatus === 'Normal') {
         type = "集合不足 (Convergence Insufficiency)";
-        desc = "近方外斜位，調節功能基本正常。";
+        desc = "近方外斜位，調節系統基本正常。";
       } else if (aaStatus === 'Low') {
         type = "假性集合不足(調節不足)";
         desc = "近方外斜位，調節幅度偏低。";
@@ -456,7 +456,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
     if (diagnosis.includes("假性集合不足")) {
       return {
         symptoms: "症狀與集合不足相似，但主因是調節不足導致不願動用調節性集合",
-        treatment: "1.屈光矯正 2.加入正度數 3.調節功能訓練",
+        treatment: "1.屈光矯正 2.加入正度數 3.調節系統訓練",
         type: "warning"
       };
     }
@@ -519,7 +519,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
                 <div className="w-1 h-4 bg-blue-400 rounded-full"></div>
                 <div className="text-xs font-bold text-blue-200 uppercase tracking-widest">Step 1</div>
               </div>
-              <div className="text-xs font-bold text-blue-200 uppercase tracking-widest">調節功能判定</div>
+              <div className="text-xs font-bold text-blue-200 uppercase tracking-widest">調節系統判定</div>
             </div>
             <div className="text-2xl font-black mb-1 leading-tight">{result.accDiagnosis}</div>
             
@@ -1130,25 +1130,36 @@ export default function App() {
             <div className="bg-white text-gray-900 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center text-gray-900 bg-white">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-blue-600">調節功能判定路徑</h3>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-blue-600">調節系統判定路徑</h3>
                 </div>
               </div>
               
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="bg-white border-b border-gray-200">
-                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/5">1. FCC 結果</th>
-                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/5">2. AA 狀態</th>
-                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider border-r border-gray-100 w-1/4">3. 驗證指標</th>
-                      <th className="p-2 text-left text-[9px] font-black text-gray-400 uppercase tracking-wider w-1/4">最終診斷</th>
+                    <tr className="bg-gray-50/50 border-b border-gray-200">
+                      <th className="p-2 text-left text-[9px] font-black text-blue-600 uppercase tracking-wider border-r border-gray-100" colSpan={4}>★ 優先判定 (Priority Rule)</th>
+                    </tr>
+                    <tr className="bg-yellow-50/20 border-b border-gray-200">
+                      <td className="p-3 border-r border-gray-100 font-bold text-xs text-yellow-700">調節不靈敏 (AF)</td>
+                      <td className="p-3 border-r border-gray-100 text-xs text-gray-600 italic" colSpan={2}>
+                        獨立判定：不考慮 FCC 與 AA。只要滿足：
+                        <span className="font-bold ml-2">NRA &lt; +1.50 且 PRA &gt; -1.75</span>
+                      </td>
+                      <td className="p-3 font-black text-yellow-600 bg-yellow-50/10 text-xs">調節不靈敏 (AF)</td>
+                    </tr>
+                    <tr className="bg-white border-b border-gray-200 text-gray-400">
+                      <th className="p-2 text-left text-[9px] font-black uppercase tracking-wider border-r border-gray-100 w-1/5">1. FCC 結果</th>
+                      <th className="p-2 text-left text-[9px] font-black uppercase tracking-wider border-r border-gray-100 w-1/5">2. AA 狀態</th>
+                      <th className="p-2 text-left text-[9px] font-black uppercase tracking-wider border-r border-gray-100 w-1/4">3. 驗證指標</th>
+                      <th className="p-2 text-left text-[9px] font-black uppercase tracking-wider w-1/4">最終診斷</th>
                     </tr>
                   </thead>
                   <tbody className="text-xs">
                     {/* Branch: FCC > 0.75 */}
                     <tr className="border-b border-gray-100">
                       <td rowSpan={2} className="p-3 border-r border-gray-100 align-top">
-                        <div className="font-bold text-blue-600 text-xs">FCC {`>`} 0.75</div>
+                        <div className="font-bold text-red-600 text-xs">FCC {`>`} 0.75</div>
                       </td>
                       <td className="p-3 border-r border-gray-100 border-b border-gray-50">
                         <div className="font-bold text-gray-700 text-xs">AA 低</div>
@@ -1196,8 +1207,8 @@ export default function App() {
 
                     {/* Branch: FCC Normal */}
                     <tr className="border-b border-gray-100">
-                      <td rowSpan={3} className="p-3 border-r border-gray-100 align-top">
-                        <div className="font-bold text-gray-400 text-xs">0.00 ~ +0.75</div>
+                      <td rowSpan={2} className="p-3 border-r border-gray-100 align-top text-gray-900">
+                        <div className="font-bold text-blue-600 text-xs text-center bg-blue-50/10 p-1 rounded">FCC 正常</div>
                       </td>
                       <td className="p-3 border-r border-gray-100 border-b border-gray-50">
                         <div className="font-bold text-gray-700 text-xs">AA 正常</div>
@@ -1205,23 +1216,14 @@ export default function App() {
                       <td className="p-3 border-r border-gray-100 border-b border-gray-50 text-gray-500 text-xs">
                         NRA & PRA 正常
                       </td>
-                      <td className="p-3 font-black text-emerald-600 bg-emerald-50/5 text-xs">調節功能正常</td>
-                    </tr>
-                    <tr className="border-b border-gray-100">
-                      <td className="p-3 border-r border-gray-100 border-b border-gray-50">
-                        <div className="font-bold text-gray-700 text-xs">AA 正常</div>
-                      </td>
-                      <td className="p-3 border-r border-gray-100 border-b border-gray-50 text-gray-500 text-xs">
-                        NRA 低 或 PRA 低
-                      </td>
-                      <td className="p-3 font-black text-yellow-600 bg-yellow-50/10 text-xs">調節不靈敏 (AF)</td>
+                      <td className="p-3 font-black text-emerald-600 bg-emerald-50/5 text-xs">調節系統正常</td>
                     </tr>
                     <tr>
-                      <td className="p-3 border-r border-gray-100">
-                        <div className="font-bold text-gray-700 text-xs">AA 低於最小值</div>
+                      <td className="p-3 border-r border-gray-100 text-gray-900">
+                        <div className="font-bold text-gray-700 text-xs">AA 正常或低</div>
                       </td>
                       <td className="p-3 border-r border-gray-100 text-gray-500 text-xs">
-                        FCC 尚未表現滯後
+                        PRA 偏低 (&gt; -1.25)
                       </td>
                       <td className="p-3 font-black text-orange-500 bg-orange-50/10 text-xs">潛在調節不足</td>
                     </tr>
@@ -1738,9 +1740,9 @@ export default function App() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Distance Section (6m) */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
               <SectionHeader 
                 icon={Ruler} 
                 title="聚散系統" 
