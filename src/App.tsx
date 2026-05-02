@@ -1057,16 +1057,29 @@ export default function App() {
             {/* General Info Section - Hidden in Logic mode as requested */}
             {mode !== 'logic' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+                <SectionHeader 
+                  icon={Activity} 
+                  title="基本資料" 
+                  subtitle="受檢者基礎數據"
+                  hideIcon={true}
+                />
                 <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8">
                   <div className="flex flex-wrap items-start gap-10 flex-1">
                     {/* Birth Date Group */}
                     <div className="flex flex-col gap-2">
-                      <label 
-                        className="text-[11px] font-black text-gray-900 tracking-widest uppercase"
-                        htmlFor="general-birthdate"
-                      >
-                        生日
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label 
+                          className="text-[11px] font-black text-gray-900 tracking-widest uppercase"
+                          htmlFor="general-birthdate"
+                        >
+                          年齡
+                        </label>
+                        {data.birthDate && (
+                          <span className="text-[10px] font-black text-blue-600">
+                            ({calculateAge(data.birthDate)} 歲)
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
                         <input
                           id="general-birthdate"
@@ -1076,13 +1089,6 @@ export default function App() {
                           onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
                           className="w-32 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
                         />
-                        {data.birthDate && (
-                          <div className="absolute -bottom-5 left-1">
-                            <p className="text-[9px] font-black text-blue-600 whitespace-nowrap">
-                              {calculateAge(data.birthDate)} 歲
-                            </p>
-                          </div>
-                        )}
                       </div>
                     </div>
 
