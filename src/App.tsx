@@ -386,8 +386,19 @@ const calculateDysfunctionType = (data: VisionData) => {
 
 const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
   const result = calculateDysfunctionType(data);
-  const hasPhoriaData = !!(data.distance.phoriaValue && data.near.phoriaValue);
-  const hasAnyData = hasPhoriaData || result.hasAccData;
+  const nearAnalysis = calculateAnalysis(data, 'near');
+  const distAnalysis = calculateAnalysis(data, 'distance');
+  
+  // More granular data presence checks
+  const hasDistPhoria = data.distance.phoriaValue !== '';
+  const hasNearPhoria = data.near.phoriaValue !== '';
+  const hasDistPrism = hasDistPhoria && (data.distance.bi.break !== '' || data.distance.bi.blur !== '' || data.distance.bo.break !== '' || data.distance.bo.blur !== '');
+  const hasNearPrism = hasNearPhoria && (data.near.bi.break !== '' || data.near.bi.blur !== '' || data.near.bo.break !== '' || data.near.bo.blur !== '');
+  const hasAccData = result.hasAccData;
+  const hasACAData = !!nearAnalysis.aca;
+
+  // Analysis report should show if we have ANY meaningful data
+  const hasAnyData = hasDistPhoria || hasNearPhoria || hasAccData || hasDistPrism || hasNearPrism;
 
   const getManagementInfo = (diagnosis: string) => {
     // Accommodation mapping
@@ -487,8 +498,6 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
     return null;
   };
 
-  const nearAnalysis = calculateAnalysis(data, 'near');
-  const distAnalysis = calculateAnalysis(data, 'distance');
   const managementInfoAcc = getManagementInfo(result.accDiagnosis);
   const managementInfoVerg = getManagementInfo(result.type);
 
@@ -557,7 +566,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         )}
 
         {/* Step 2: Primary Diagnosis (Vergence) */}
-        {hasPhoriaData && (
+        {(hasDistPhoria && hasNearPhoria) && (
           <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-inner">
             <div className="flex items-center gap-2 mb-3">
               {result.hasAccData && (
@@ -592,23 +601,25 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
       </div>
 
       <div className="mt-10 flex flex-col items-center gap-8">
-        {hasPhoriaData && (
-          <>
-            <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center min-w-[280px]">
-              <div className="text-[10px] uppercase font-black text-blue-200 mb-2 tracking-[0.2em]">AC/A Ratio</div>
-              <div className="text-xl font-mono font-black text-white">
-                {nearAnalysis.aca?.message || '-'}
-              </div>
+        {hasACAData && (
+          <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center min-w-[280px]">
+            <div className="text-[10px] uppercase font-black text-blue-200 mb-2 tracking-[0.2em]">AC/A Ratio</div>
+            <div className="text-xl font-mono font-black text-white">
+              {nearAnalysis.aca?.message || '-'}
             </div>
-            
-            {/* The Three Rules - Split into Distance and Near */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-6 w-full">
-              {/* Distance Column Rules */}
+          </div>
+        )}
+        
+        {/* The Three Rules - Only show if we have prism data */}
+        {(hasDistPrism || hasNearPrism) && (
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 w-full">
+            {/* Distance Column Rules */}
+            {hasDistPrism ? (
               <div className="space-y-3">
                 <div className="text-center">
                   <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.1em] text-blue-200/60 flex items-center justify-center gap-1 sm:gap-2">
                     <div className="h-[1px] flex-1 bg-white/10"></div>
-                    遠方
+                    遠方 3大法則
                     <div className="h-[1px] flex-1 bg-white/10"></div>
                   </span>
                 </div>
@@ -633,13 +644,15 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
                   </div>
                 </div>
               </div>
+            ) : <div />}
 
-              {/* Near Column Rules */}
+            {/* Near Column Rules */}
+            {hasNearPrism ? (
               <div className="space-y-3">
                 <div className="text-center">
                   <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.1em] text-emerald-200/60 flex items-center justify-center gap-1 sm:gap-2">
                     <div className="h-[1px] flex-1 bg-white/10"></div>
-                    近方
+                    近方 3大法則
                     <div className="h-[1px] flex-1 bg-white/10"></div>
                   </span>
                 </div>
@@ -664,8 +677,8 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
                   </div>
                 </div>
               </div>
-            </div>
-          </>
+            ) : <div />}
+          </div>
         )}
       </div>
 
@@ -677,60 +690,6 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         <p className="text-[11px] text-blue-200/60 leading-relaxed font-medium">
           結果僅供參考，任何視覺訓練或配鏡決策應由專業人員經完整評估後。
         </p>
-      </div>
-    </div>
-  );
-};
-
-const AnalysisCard = ({ data, section }: { data: VisionData, section: 'distance' | 'near' }) => {
-  const results = calculateAnalysis(data, section);
-  const hasData = data[section].phoriaValue || data[section].bi.break || data[section].bo.break;
-
-  if (!hasData) return null;
-
-  return (
-    <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
-      <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-        <Activity size={16} className="text-blue-600" />
-        自動分析結果 ({section === 'distance' ? '遠' : '近'})
-      </h4>
-      <div className="grid grid-cols-1 gap-3">
-        {results.sheard.applicable && (
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-500 font-medium">Sheard's 準則 (外斜)</span>
-            <span className={`font-bold ${results.sheard.met ? 'text-green-600' : 'text-red-600'}`}>
-              {results.sheard.message}
-            </span>
-          </div>
-        )}
-        {results.oneToOne.applicable && (
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-500 font-medium">1:1 法則 (內斜)</span>
-            <span className={`font-bold ${results.oneToOne.met ? 'text-green-600' : 'text-red-600'}`}>
-              {results.oneToOne.message}
-            </span>
-          </div>
-        )}
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-gray-500 font-medium">Percival's 準則</span>
-          <span className={`font-bold ${results.percival.met ? 'text-green-600' : 'text-red-600'}`}>
-            {results.percival.message}
-          </span>
-        </div>
-
-        {results.aca && (
-          <div className="flex justify-between items-center text-xs pt-2 border-t border-gray-100 mt-1">
-            <span className="text-gray-500 font-bold">AC/A 比值 (Gradient)</span>
-            <div className="flex items-center gap-2">
-              <span className={`font-bold ${results.aca.status === '正常' ? 'text-blue-600' : 'text-orange-600'}`}>
-                {results.aca.status}
-              </span>
-              <span className="text-gray-900 font-mono font-bold bg-white px-2 py-0.5 rounded border border-gray-200 shadow-sm">
-                {results.aca.message}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -776,11 +735,11 @@ const DataTable = ({
     <table className="w-full border-collapse">
       <thead>
         <tr className="bg-gray-50 border-b border-gray-100">
-          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100 w-[100px]">斜位</th>
-          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100 w-[60px]">基底</th>
-          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100">模糊</th>
-          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100">破裂</th>
-          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">恢復</th>
+          <th className="p-2 text-xs font-black text-gray-900 uppercase tracking-widest text-center border-r border-gray-100 w-[100px]">斜位</th>
+          <th className="p-2 text-xs font-black text-gray-900 uppercase tracking-widest text-center border-r border-gray-100 w-[60px]">基底</th>
+          <th className="p-2 text-xs font-black text-gray-900 uppercase tracking-widest text-center border-r border-gray-100">模糊</th>
+          <th className="p-2 text-xs font-black text-gray-900 uppercase tracking-widest text-center border-r border-gray-100">破裂</th>
+          <th className="p-2 text-xs font-black text-gray-900 uppercase tracking-widest text-center">恢復</th>
         </tr>
       </thead>
       <tbody>
@@ -795,7 +754,7 @@ const DataTable = ({
                   onChange={(e) => onInputChange(section, 'phoriaValue', e.target.value)}
                   onKeyDown={(e) => onKeyDown(e, `${section}-phoria`)}
                   placeholder="0"
-                  className="w-full px-2 py-1.5 bg-gray-50/50 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center font-mono text-sm placeholder:text-gray-200"
+                  className="w-full px-2 py-1.5 bg-gray-50/50 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center font-mono text-sm placeholder:text-gray-100"
                 />
                 <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">Δ</span>
               </div>
@@ -807,10 +766,10 @@ const DataTable = ({
                       onInputChange(section, 'phoriaType', nextType);
                     }
                   }}
-                  className={`flex-1 py-1 text-[9px] font-black rounded transition-all ${
+                  className={`flex-1 py-1 text-[10px] font-black rounded transition-all ${
                     phoriaValue === '0' || phoriaValue === ''
-                      ? 'bg-white text-green-600 shadow-sm cursor-default'
-                      : 'bg-white text-blue-600 shadow-sm hover:bg-blue-50 active:scale-95'
+                      ? 'bg-white text-green-700 shadow-sm cursor-default'
+                      : 'bg-white text-blue-700 shadow-sm hover:bg-blue-50 active:scale-95'
                   }`}
                 >
                   {phoriaValue === '0' || phoriaValue === '' ? '正位' : (phoriaType === 'exo' ? 'BI' : 'BO')}
@@ -818,23 +777,31 @@ const DataTable = ({
               </div>
             </div>
           </td>
-          <td className="p-2 text-center border-r border-gray-100 bg-blue-50/10 font-black text-[10px] text-blue-600">BI</td>
-          {(['blur', 'break', 'recovery'] as const).map((sub) => (
-            <td key={sub} className="p-1 border-r border-gray-100 last:border-r-0">
-              <input
-                id={`${section}-bi-${sub}`}
-                type="text"
-                value={bi[sub]}
-                onChange={(e) => onInputChange(section, 'bi', e.target.value, sub)}
-                onKeyDown={(e) => onKeyDown(e, `${section}-bi-${sub}`)}
-                placeholder={norms.bi[sub]}
-                className="w-full py-3 bg-transparent hover:bg-gray-50/50 focus:bg-blue-50/30 text-center font-mono text-sm focus:ring-0 outline-none transition-colors"
-              />
-            </td>
-          ))}
+          <td className="p-2 text-center border-r border-gray-100 bg-blue-50/10 font-black text-xs text-blue-700">BI</td>
+          {(['blur', 'break', 'recovery'] as const).map((sub) => {
+            const isDistBIBlur = section === 'distance' && sub === 'blur';
+            return (
+              <td key={sub} className="p-1 border-r border-gray-100 last:border-r-0">
+                <input
+                  id={`${section}-bi-${sub}`}
+                  type="text"
+                  value={isDistBIBlur ? 'X' : bi[sub]}
+                  readOnly={isDistBIBlur}
+                  onChange={(e) => !isDistBIBlur && onInputChange(section, 'bi', e.target.value, sub)}
+                  onKeyDown={(e) => !isDistBIBlur && onKeyDown(e, `${section}-bi-${sub}`)}
+                  placeholder={norms.bi[sub]}
+                  className={`w-full py-3 bg-transparent text-center font-mono text-sm outline-none transition-colors placeholder:text-gray-100 ${
+                    isDistBIBlur 
+                      ? 'text-gray-400 cursor-not-allowed font-bold' 
+                      : 'hover:bg-gray-50/50 focus:bg-blue-50/30 focus:ring-0'
+                  }`}
+                />
+              </td>
+            );
+          })}
         </tr>
         <tr>
-          <td className="p-2 text-center border-r border-gray-100 bg-indigo-50/10 font-black text-[10px] text-indigo-600">BO</td>
+          <td className="p-2 text-center border-r border-gray-100 bg-indigo-50/10 font-black text-xs text-indigo-700">BO</td>
           {(['blur', 'break', 'recovery'] as const).map((sub) => (
             <td key={sub} className="p-1 border-r border-gray-100 last:border-r-0">
               <input
@@ -844,7 +811,7 @@ const DataTable = ({
                 onChange={(e) => onInputChange(section, 'bo', e.target.value, sub)}
                 onKeyDown={(e) => onKeyDown(e, `${section}-bo-${sub}`)}
                 placeholder={norms.bo[sub]}
-                className="w-full py-3 bg-transparent hover:bg-gray-50/50 focus:bg-indigo-50/30 text-center font-mono text-sm focus:ring-0 outline-none transition-colors"
+                className="w-full py-3 bg-transparent hover:bg-gray-50/50 focus:bg-indigo-50/30 text-center font-mono text-sm focus:ring-0 outline-none transition-colors placeholder:text-gray-100"
               />
             </td>
           ))}
@@ -1091,50 +1058,58 @@ export default function App() {
             {mode !== 'logic' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
                 <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8">
-                  <div className="flex flex-col gap-6 flex-1 max-w-xl">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
-                        受檢者出生年月
-                      </span>
-                      <div className="flex flex-col shrink-0 flex-1">
-                        <div className="relative w-full max-w-[200px]">
-                          <input
-                            id="general-birthdate"
-                            type="month"
-                            value={data.birthDate}
-                            onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
-                          />
-                        </div>
+                  <div className="flex flex-wrap items-start gap-10 flex-1">
+                    {/* Birth Date Group */}
+                    <div className="flex flex-col gap-2">
+                      <label 
+                        className="text-[11px] font-black text-gray-900 tracking-widest uppercase"
+                        htmlFor="general-birthdate"
+                      >
+                        生日
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="general-birthdate"
+                          type="month"
+                          value={data.birthDate}
+                          onChange={(e) => handleInputChange('general', 'birthDate', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'general-birthdate')}
+                          className="w-32 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
+                        />
                         {data.birthDate && (
-                          <p className="text-[10px] font-bold text-blue-500 ml-1 mt-1">
-                            年齡: {calculateAge(data.birthDate)} 歲
-                          </p>
+                          <div className="absolute -bottom-5 left-1">
+                            <p className="text-[9px] font-black text-blue-600 whitespace-nowrap">
+                              {calculateAge(data.birthDate)} 歲
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap w-28">
-                        瞳距 (PD)
-                      </span>
-                      <div className="relative w-full max-w-[140px]">
+                    {/* PD Group */}
+                    <div className="flex flex-col gap-2">
+                      <label 
+                        className="text-[11px] font-black text-gray-900 tracking-widest uppercase"
+                        htmlFor="general-pd"
+                      >
+                        瞳距
+                      </label>
+                      <div className="relative">
                         <input
                           id="general-pd"
                           type="text"
                           value={data.pd}
                           onChange={(e) => handleInputChange('general', 'pd', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'general-pd')}
-                          placeholder="例如: 64"
-                          className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm"
+                          placeholder="64"
+                          className="w-20 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all font-mono text-sm placeholder:text-gray-100"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">mm</span>
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">mm</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="hidden lg:block flex-1 text-right">
+                  <div className="hidden lg:block shrink-0 text-right">
                     <div className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-full uppercase tracking-widest">
                       臨床診斷輔助系統
                     </div>
@@ -1504,7 +1479,7 @@ export default function App() {
                         onChange={(e) => handleInputChange('distance', 'phoriaValue', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'dist-phoria')}
                         placeholder="0"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-200"
                       />
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
                     </div>
@@ -1548,7 +1523,7 @@ export default function App() {
                         onChange={(e) => handleInputChange('near', 'phoriaValue', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'near-phoria')}
                         placeholder="0"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-200"
                       />
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
                     </div>
@@ -1640,7 +1615,7 @@ export default function App() {
                         onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
                         placeholder="0.50"
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                     </div>
@@ -1665,7 +1640,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
                           placeholder="2.00"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                       </div>
@@ -1688,7 +1663,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
                           placeholder="2.37"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                       </div>
@@ -1708,7 +1683,7 @@ export default function App() {
                         onKeyDown={(e) => handleKeyDown(e, 'near-add')}
                         placeholder="0.00"
                         disabled={aaInputMode !== 'push-up-add'}
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                     </div>
@@ -1724,7 +1699,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
                           placeholder="例如: 10"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
                       </div>
@@ -1740,7 +1715,7 @@ export default function App() {
                           onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
                           placeholder="例如: 10.0"
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                       </div>
@@ -1780,8 +1755,6 @@ export default function App() {
                   onInputChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                 />
-
-                <AnalysisCard data={data} section="distance" />
               </div>
             </div>
 
@@ -1795,11 +1768,24 @@ export default function App() {
               />
               
               <div className="space-y-8 mt-6">
+                <DataTable 
+                  section="near"
+                  phoriaValue={data.near.phoriaValue}
+                  phoriaType={data.near.phoriaType}
+                  bi={data.near.bi}
+                  bo={data.near.bo}
+                  norms={{ 
+                    bi: { blur: '13', break: '21', recovery: '13' },
+                    bo: { blur: '17', break: '21', recovery: '11' }
+                  }}
+                  onInputChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                />
+
                 {/* +1.00 Phoria - Keep this separate but styled consistently */}
                 <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Plus className="w-4 h-4 text-blue-500" />
-                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-20">
+                  <div className="flex items-center shrink-0">
+                    <span className="text-xs font-black text-gray-700 uppercase tracking-widest w-24">
                       +1.00 斜位
                     </span>
                   </div>
@@ -1835,22 +1821,6 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-
-                <DataTable 
-                  section="near"
-                  phoriaValue={data.near.phoriaValue}
-                  phoriaType={data.near.phoriaType}
-                  bi={data.near.bi}
-                  bo={data.near.bo}
-                  norms={{ 
-                    bi: { blur: '13', break: '21', recovery: '13' },
-                    bo: { blur: '17', break: '21', recovery: '11' }
-                  }}
-                  onInputChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                />
-
-                <AnalysisCard data={data} section="near" />
 
                 {/* Accommodation */}
                 <div className="pt-6 border-t border-gray-100">
@@ -1910,7 +1880,7 @@ export default function App() {
                             onChange={(e) => handleInputChange('general', 'fccValue', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, 'near-fcc')}
                             placeholder="0.50"
-                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                         </div>
@@ -1935,7 +1905,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('near', 'nraValue', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-nra')}
                               placeholder="2.00"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                           </div>
@@ -1958,7 +1928,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('near', 'praValue', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-pra')}
                               placeholder="2.37"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                           </div>
@@ -1978,7 +1948,7 @@ export default function App() {
                           onKeyDown={(e) => handleKeyDown(e, 'near-add')}
                           placeholder="0.00"
                           disabled={aaInputMode !== 'push-up-add'}
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                         />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                         </div>
@@ -1994,7 +1964,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('general', 'blurPoint', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-blur-point')}
                               placeholder="例如: 10"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">cm</span>
                           </div>
@@ -2010,7 +1980,7 @@ export default function App() {
                               onChange={(e) => handleInputChange('general', 'aa', e.target.value)}
                               onKeyDown={(e) => handleKeyDown(e, 'near-aa')}
                               placeholder="例如: 10.0"
-                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-300"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-200"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
                           </div>
