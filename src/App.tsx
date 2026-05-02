@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Eye, Ruler, Activity, Save, RotateCcw, Info, AlertTriangle } from 'lucide-react';
+import { Eye, Ruler, Activity, Save, RotateCcw, Info, AlertTriangle, Plus } from 'lucide-react';
 
 interface PrismData {
   blur: string;
@@ -753,45 +753,104 @@ const SectionHeader = ({ icon: Icon, title, subtitle, children, hideIcon }: { ic
   </div>
 );
 
-const PrismInputGroup = ({ 
-  label, 
+const DataTable = ({ 
   section, 
-  field, 
-  values,
+  phoriaValue, 
+  phoriaType, 
+  bi, 
+  bo, 
   norms,
   onInputChange,
   onKeyDown
 }: { 
-  label: string, 
   section: 'distance' | 'near', 
-  field: 'bi' | 'bo', 
-  values: PrismData,
-  norms: { blur: string, break: string, recovery: string },
+  phoriaValue: string, 
+  phoriaType: 'exo' | 'eso' | 'ortho',
+  bi: PrismData,
+  bo: PrismData,
+  norms: { bi: PrismData, bo: PrismData },
   onInputChange: (section: 'distance' | 'near', field: string, value: string, subField?: keyof PrismData) => void,
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, currentId: string) => void
 }) => (
-  <div className="space-y-3">
-    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wider">
-      {label} (水平稜鏡 Δ)
-    </label>
-    <div className="grid grid-cols-3 gap-3">
-      {(['blur', 'break', 'recovery'] as const).map((sub) => (
-        <div key={sub} className="space-y-1">
-          <span className="text-[10px] text-gray-400 uppercase font-bold">
-            {sub === 'blur' ? '模糊' : sub === 'break' ? '破裂' : '恢復'}
-          </span>
-          <input
-            id={`${section === 'distance' ? 'dist' : 'near'}-${field}-${sub}`}
-            type="text"
-            value={values[sub]}
-            onChange={(e) => onInputChange(section, field, e.target.value, sub)}
-            onKeyDown={(e) => onKeyDown(e, `${section === 'distance' ? 'dist' : 'near'}-${field}-${sub}`)}
-            placeholder={norms[sub]}
-            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center font-mono placeholder:text-gray-300"
-          />
-        </div>
-      ))}
-    </div>
+  <div className="w-full overflow-hidden border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+    <table className="w-full border-collapse">
+      <thead>
+        <tr className="bg-gray-50 border-b border-gray-100">
+          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100 w-[100px]">斜位</th>
+          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100 w-[60px]">基底</th>
+          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100">模糊</th>
+          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center border-r border-gray-100">破裂</th>
+          <th className="p-2 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">恢復</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr className="border-b border-gray-50">
+          <td rowSpan={2} className="p-3 border-r border-gray-100 bg-white align-middle">
+            <div className="flex flex-col gap-1.5 items-center">
+              <div className="relative w-full">
+                <input
+                  id={`${section}-phoria`}
+                  type="text"
+                  value={phoriaValue}
+                  onChange={(e) => onInputChange(section, 'phoriaValue', e.target.value)}
+                  onKeyDown={(e) => onKeyDown(e, `${section}-phoria`)}
+                  placeholder="0"
+                  className="w-full px-2 py-1.5 bg-gray-50/50 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center font-mono text-sm placeholder:text-gray-200"
+                />
+                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">Δ</span>
+              </div>
+              <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100 w-full overflow-hidden">
+                <button
+                  onClick={() => {
+                    if (phoriaValue !== '0' && phoriaValue !== '') {
+                      const nextType = phoriaType === 'exo' ? 'eso' : 'exo';
+                      onInputChange(section, 'phoriaType', nextType);
+                    }
+                  }}
+                  className={`flex-1 py-1 text-[9px] font-black rounded transition-all ${
+                    phoriaValue === '0' || phoriaValue === ''
+                      ? 'bg-white text-green-600 shadow-sm cursor-default'
+                      : 'bg-white text-blue-600 shadow-sm hover:bg-blue-50 active:scale-95'
+                  }`}
+                >
+                  {phoriaValue === '0' || phoriaValue === '' ? '正位' : (phoriaType === 'exo' ? 'BI' : 'BO')}
+                </button>
+              </div>
+            </div>
+          </td>
+          <td className="p-2 text-center border-r border-gray-100 bg-blue-50/10 font-black text-[10px] text-blue-600">BI</td>
+          {(['blur', 'break', 'recovery'] as const).map((sub) => (
+            <td key={sub} className="p-1 border-r border-gray-100 last:border-r-0">
+              <input
+                id={`${section}-bi-${sub}`}
+                type="text"
+                value={bi[sub]}
+                onChange={(e) => onInputChange(section, 'bi', e.target.value, sub)}
+                onKeyDown={(e) => onKeyDown(e, `${section}-bi-${sub}`)}
+                placeholder={norms.bi[sub]}
+                className="w-full py-3 bg-transparent hover:bg-gray-50/50 focus:bg-blue-50/30 text-center font-mono text-sm focus:ring-0 outline-none transition-colors"
+              />
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <td className="p-2 text-center border-r border-gray-100 bg-indigo-50/10 font-black text-[10px] text-indigo-600">BO</td>
+          {(['blur', 'break', 'recovery'] as const).map((sub) => (
+            <td key={sub} className="p-1 border-r border-gray-100 last:border-r-0">
+              <input
+                id={`${section}-bo-${sub}`}
+                type="text"
+                value={bo[sub]}
+                onChange={(e) => onInputChange(section, 'bo', e.target.value, sub)}
+                onKeyDown={(e) => onKeyDown(e, `${section}-bo-${sub}`)}
+                placeholder={norms.bo[sub]}
+                className="w-full py-3 bg-transparent hover:bg-gray-50/50 focus:bg-indigo-50/30 text-center font-mono text-sm focus:ring-0 outline-none transition-colors"
+              />
+            </td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
   </div>
 );
 
@@ -1705,73 +1764,22 @@ export default function App() {
                 title="遠方數據" 
                 subtitle="6 公尺"
                 hideIcon={false}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    遠方斜位
-                  </span>
-                  <div className="flex gap-2">
-                    <div className="relative w-24">
-                      <input
-                        id="dist-phoria"
-                        type="text"
-                        value={data.distance.phoriaValue}
-                        onChange={(e) => handleInputChange('distance', 'phoriaValue', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'dist-phoria')}
-                        placeholder="0"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
-                    </div>
-                    <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-                      {(['exo', 'eso'] as const).map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => handleInputChange('distance', 'phoriaType', type)}
-                          disabled={data.distance.phoriaValue === '0'}
-                          className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
-                            data.distance.phoriaType === type && data.distance.phoriaValue !== '0'
-                              ? 'bg-white text-blue-600 shadow-sm'
-                              : data.distance.phoriaValue === '0'
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }`}
-                        >
-                          {type === 'exo' ? 'BI' : 'BO'}
-                        </button>
-                      ))}
-                      {data.distance.phoriaValue === '0' && (
-                        <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
-                          正
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </SectionHeader>
+              />
               
-              <div className="space-y-8">
-                {/* Fusion Range */}
-                <div className="space-y-6 pt-4 border-t border-gray-100">
-                  <PrismInputGroup 
-                    label="Base In (BI)" 
-                    section="distance" 
-                    field="bi" 
-                    values={data.distance.bi}
-                    norms={{ blur: 'x', break: '7', recovery: '4' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <PrismInputGroup 
-                    label="Base Out (BO)" 
-                    section="distance" 
-                    field="bo" 
-                    values={data.distance.bo}
-                    norms={{ blur: '9', break: '19', recovery: '10' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                </div>
+              <div className="space-y-8 mt-6">
+                <DataTable 
+                  section="distance"
+                  phoriaValue={data.distance.phoriaValue}
+                  phoriaType={data.distance.phoriaType}
+                  bi={data.distance.bi}
+                  bo={data.distance.bo}
+                  norms={{ 
+                    bi: { blur: 'x', break: '7', recovery: '4' },
+                    bo: { blur: '9', break: '19', recovery: '10' }
+                  }}
+                  onInputChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                />
 
                 <AnalysisCard data={data} section="distance" />
               </div>
@@ -1784,118 +1792,63 @@ export default function App() {
                 title="近方數據" 
                 subtitle="40 公分"
                 hideIcon={false}
-              >
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
-                      近方斜位
-                    </span>
-                    <div className="flex gap-2">
-                      <div className="relative w-24">
-                        <input
-                          id="near-phoria"
-                          type="text"
-                          value={data.near.phoriaValue}
-                          onChange={(e) => handleInputChange('near', 'phoriaValue', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-phoria')}
-                          placeholder="0"
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
-                      </div>
-                      <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-                        {(['exo', 'eso'] as const).map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleInputChange('near', 'phoriaType', type)}
-                            disabled={data.near.phoriaValue === '0'}
-                            className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
-                              data.near.phoriaType === type && data.near.phoriaValue !== '0'
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : data.near.phoriaValue === '0'
-                                ? 'text-gray-300 cursor-not-allowed'
-                                : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                          >
-                            {type === 'exo' ? 'BI' : 'BO'}
-                          </button>
-                        ))}
-                        {data.near.phoriaValue === '0' && (
-                          <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
-                            正
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
+              />
+              
+              <div className="space-y-8 mt-6">
+                {/* +1.00 Phoria - Keep this separate but styled consistently */}
+                <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Plus className="w-4 h-4 text-blue-500" />
+                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-20">
                       +1.00 斜位
                     </span>
-                    <div className="flex gap-2">
-                      <div className="relative w-24">
-                        <input
-                          id="near-phoria-plus1"
-                          type="text"
-                          value={data.near.phoriaPlus1Value}
-                          onChange={(e) => handleInputChange('near', 'phoriaPlus1Value', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, 'near-phoria-plus1')}
-                          placeholder="0"
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm placeholder:text-gray-300"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Δ</span>
-                      </div>
-                      <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-                        {(['exo', 'eso'] as const).map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleInputChange('near', 'phoriaPlus1Type', type)}
-                            disabled={data.near.phoriaPlus1Value === '0'}
-                            className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
-                              data.near.phoriaPlus1Type === type && data.near.phoriaPlus1Value !== '0'
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : data.near.phoriaPlus1Value === '0'
-                                ? 'text-gray-300 cursor-not-allowed'
-                                : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                          >
-                            {type === 'exo' ? 'BI' : 'BO'}
-                          </button>
-                        ))}
-                        {data.near.phoriaPlus1Value === '0' && (
-                          <div className="px-2 py-1 text-[10px] font-bold text-blue-600 bg-white rounded-md shadow-sm">
-                            正
-                          </div>
-                        )}
-                      </div>
+                  </div>
+                  <div className="flex gap-2 flex-1 max-w-[220px]">
+                    <div className="relative w-24">
+                      <input
+                        id="near-phoria-plus1"
+                        type="text"
+                        value={data.near.phoriaPlus1Value}
+                        onChange={(e) => handleInputChange('near', 'phoriaPlus1Value', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, 'near-phoria-plus1')}
+                        placeholder="0"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">Δ</span>
+                    </div>
+                    <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100 flex-1">
+                      <button
+                        onClick={() => {
+                          if (data.near.phoriaPlus1Value !== '0' && data.near.phoriaPlus1Value !== '') {
+                            const nextType = data.near.phoriaPlus1Type === 'exo' ? 'eso' : 'exo';
+                            handleInputChange('near', 'phoriaPlus1Type', nextType);
+                          }
+                        }}
+                        className={`flex-1 py-1 text-[9px] font-black rounded transition-all ${
+                          data.near.phoriaPlus1Value === '0' || data.near.phoriaPlus1Value === ''
+                            ? 'bg-white text-green-600 shadow-sm cursor-default'
+                            : 'bg-white text-blue-600 shadow-sm hover:bg-blue-50 active:scale-95'
+                        }`}
+                      >
+                        {data.near.phoriaPlus1Value === '0' || data.near.phoriaPlus1Value === '' ? '正位' : (data.near.phoriaPlus1Type === 'exo' ? 'BI' : 'BO')}
+                      </button>
                     </div>
                   </div>
                 </div>
-              </SectionHeader>
-              
-              <div className="space-y-8">
-                {/* Fusion Range */}
-                <div className="space-y-6 pt-4 border-t border-gray-100">
-                  <PrismInputGroup 
-                    label="Base In (BI)" 
-                    section="near" 
-                    field="bi" 
-                    values={data.near.bi}
-                    norms={{ blur: '13', break: '21', recovery: '13' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <PrismInputGroup 
-                    label="Base Out (BO)" 
-                    section="near" 
-                    field="bo" 
-                    values={data.near.bo}
-                    norms={{ blur: '17', break: '21', recovery: '11' }}
-                    onInputChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                </div>
+
+                <DataTable 
+                  section="near"
+                  phoriaValue={data.near.phoriaValue}
+                  phoriaType={data.near.phoriaType}
+                  bi={data.near.bi}
+                  bo={data.near.bo}
+                  norms={{ 
+                    bi: { blur: '13', break: '21', recovery: '13' },
+                    bo: { blur: '17', break: '21', recovery: '11' }
+                  }}
+                  onInputChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                />
 
                 <AnalysisCard data={data} section="near" />
 
