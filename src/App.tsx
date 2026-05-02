@@ -695,7 +695,7 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
   );
 };
 
-const SectionHeader = ({ icon: Icon, title, subtitle, children, hideIcon }: { icon: any, title: string, subtitle: string, children?: React.ReactNode, hideIcon?: boolean }) => (
+const SectionHeader = ({ icon: Icon, title, subtitle, children, hideIcon, titleClassName }: { icon: any, title: string, subtitle?: string, children?: React.ReactNode, hideIcon?: boolean, titleClassName?: string }) => (
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
     <div className="flex items-center gap-3">
       {!hideIcon && (
@@ -704,7 +704,7 @@ const SectionHeader = ({ icon: Icon, title, subtitle, children, hideIcon }: { ic
         </div>
       )}
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+        <h2 className={titleClassName || "text-xl font-bold text-gray-900"}>{title}</h2>
         {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
       </div>
     </div>
@@ -1565,8 +1565,9 @@ export default function App() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
               <SectionHeader 
                 icon={Eye} 
-                title="調節功能" 
-                subtitle="NRA, PRA, AA, FCC"
+                title="調節系統" 
+                subtitle=""
+                titleClassName="text-2xl font-black text-gray-900"
                 hideIcon={true}
               >
                 <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
@@ -1739,134 +1740,142 @@ export default function App() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Distance Section (6m) */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-4">
               <SectionHeader 
                 icon={Ruler} 
-                title="遠方數據" 
-                subtitle="6 公尺"
-                hideIcon={false}
+                title="聚散系統" 
+                subtitle="遠方 (6m) 與 近方 (40cm)"
+                hideIcon={true}
+                titleClassName="text-2xl font-black text-gray-900"
               />
               
-              <div className="space-y-8 mt-6">
-                <DataTable 
-                  section="distance"
-                  phoriaValue={data.distance.phoriaValue}
-                  phoriaType={data.distance.phoriaType}
-                  bi={data.distance.bi}
-                  bo={data.distance.bo}
-                  norms={{ 
-                    bi: { blur: 'x', break: '7', recovery: '4' },
-                    bo: { blur: '9', break: '19', recovery: '10' }
-                  }}
-                  onInputChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                />
-              </div>
-            </div>
-
-            {/* Near Section (40cm) */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-              <SectionHeader 
-                icon={Activity} 
-                title="近方數據" 
-                subtitle="40 公分"
-                hideIcon={false}
-              />
-              
-              <div className="space-y-8 mt-6">
-                <DataTable 
-                  section="near"
-                  phoriaValue={data.near.phoriaValue}
-                  phoriaType={data.near.phoriaType}
-                  bi={data.near.bi}
-                  bo={data.near.bo}
-                  norms={{ 
-                    bi: { blur: '13', break: '21', recovery: '13' },
-                    bo: { blur: '17', break: '21', recovery: '11' }
-                  }}
-                  onInputChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                />
-
-                {/* +1.00 Phoria - Keep this separate but styled consistently */}
-                <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
-                  <div className="flex items-center shrink-0">
-                    <span className="text-xs font-black text-gray-700 uppercase tracking-widest w-24">
-                      +1.00 斜位
-                    </span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-6">
+                {/* Distance Data */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-4 w-1 bg-blue-500 rounded-full"></div>
+                    <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest">遠方數據 (6m)</h3>
                   </div>
-                  <div className="flex gap-2 flex-1 max-w-[220px]">
-                    <div className="relative w-24">
-                      <input
-                        id="near-phoria-plus1"
-                        type="text"
-                        value={data.near.phoriaPlus1Value}
-                        onChange={(e) => handleInputChange('near', 'phoriaPlus1Value', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'near-phoria-plus1')}
-                        placeholder="0"
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">Δ</span>
+                  <DataTable 
+                    section="distance"
+                    phoriaValue={data.distance.phoriaValue}
+                    phoriaType={data.distance.phoriaType}
+                    bi={data.distance.bi}
+                    bo={data.distance.bo}
+                    norms={{ 
+                      bi: { blur: 'x', break: '7', recovery: '4' },
+                      bo: { blur: '9', break: '19', recovery: '10' }
+                    }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+
+                {/* Near Data Column */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-4 w-1 bg-emerald-500 rounded-full"></div>
+                    <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest">近方數據 (40cm)</h3>
+                  </div>
+                  <DataTable 
+                    section="near"
+                    phoriaValue={data.near.phoriaValue}
+                    phoriaType={data.near.phoriaType}
+                    bi={data.near.bi}
+                    bo={data.near.bo}
+                    norms={{ 
+                      bi: { blur: '13', break: '21', recovery: '13' },
+                      bo: { blur: '17', break: '21', recovery: '11' }
+                    }}
+                    onInputChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                  {/* +1.00 Phoria - Moved here into near column */}
+                  <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100 mt-4">
+                    <div className="flex items-center shrink-0">
+                      <span className="text-xs font-black text-gray-700 uppercase tracking-widest w-24">
+                        +1.00 斜位
+                      </span>
                     </div>
-                    <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100 flex-1">
-                      <button
-                        onClick={() => {
-                          if (data.near.phoriaPlus1Value !== '0' && data.near.phoriaPlus1Value !== '') {
-                            const nextType = data.near.phoriaPlus1Type === 'exo' ? 'eso' : 'exo';
-                            handleInputChange('near', 'phoriaPlus1Type', nextType);
-                          }
-                        }}
-                        className={`flex-1 py-1 text-[9px] font-black rounded transition-all ${
-                          data.near.phoriaPlus1Value === '0' || data.near.phoriaPlus1Value === ''
-                            ? 'bg-white text-green-600 shadow-sm cursor-default'
-                            : 'bg-white text-blue-600 shadow-sm hover:bg-blue-50 active:scale-95'
-                        }`}
-                      >
-                        {data.near.phoriaPlus1Value === '0' || data.near.phoriaPlus1Value === '' ? '正位' : (data.near.phoriaPlus1Type === 'exo' ? 'BI' : 'BO')}
-                      </button>
+                    <div className="flex gap-2 flex-1 max-w-[220px]">
+                      <div className="relative w-24">
+                        <input
+                          id="near-phoria-plus1"
+                          type="text"
+                          value={data.near.phoriaPlus1Value}
+                          onChange={(e) => handleInputChange('near', 'phoriaPlus1Value', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-phoria-plus1')}
+                          placeholder="0"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">Δ</span>
+                      </div>
+                      <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100 flex-1">
+                        <button
+                          onClick={() => {
+                            if (data.near.phoriaPlus1Value !== '0' && data.near.phoriaPlus1Value !== '') {
+                              const nextType = data.near.phoriaPlus1Type === 'exo' ? 'eso' : 'exo';
+                              handleInputChange('near', 'phoriaPlus1Type', nextType);
+                            }
+                          }}
+                          className={`flex-1 py-1 text-[9px] font-black rounded transition-all ${
+                            data.near.phoriaPlus1Value === '0' || data.near.phoriaPlus1Value === ''
+                              ? 'bg-white text-green-600 shadow-sm cursor-default'
+                              : 'bg-white text-blue-600 shadow-sm hover:bg-blue-50 active:scale-95'
+                          }`}
+                        >
+                          {data.near.phoriaPlus1Value === '0' || data.near.phoriaPlus1Value === '' ? '正位' : (data.near.phoriaPlus1Type === 'exo' ? 'BI' : 'BO')}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Accommodation */}
-                <div className="pt-6 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                      調節功能 (Accommodation)
-                    </label>
-                  <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-                    <button
-                      onClick={() => setAaInputMode('push-up')}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                        aaInputMode === 'push-up'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      推進法
-                    </button>
-                    <button
-                      onClick={() => setAaInputMode('push-up-add')}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                        aaInputMode === 'push-up-add'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      加入 ADD 推進法
-                    </button>
-                    <button
-                      onClick={() => setAaInputMode('direct')}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                        aaInputMode === 'direct'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      調節幅度
-                    </button>
-                  </div>
-                  </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <div className="space-y-6">
+                <div className="pt-2">
+                <SectionHeader 
+                  icon={Eye} 
+                  title="調節系統" 
+                  subtitle=""
+                  titleClassName="text-2xl font-black text-gray-900"
+                  hideIcon={true}
+                >
+                    <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                      <button
+                        onClick={() => setAaInputMode('push-up')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                          aaInputMode === 'push-up'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        推進法
+                      </button>
+                      <button
+                        onClick={() => setAaInputMode('push-up-add')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                          aaInputMode === 'push-up-add'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        加入 ADD 推進法
+                      </button>
+                      <button
+                        onClick={() => setAaInputMode('direct')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                          aaInputMode === 'direct'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        調節幅度
+                      </button>
+                    </div>
+                  </SectionHeader>
                   
                   <div className="space-y-6">
                     <div className="space-y-1">
