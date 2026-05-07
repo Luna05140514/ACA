@@ -19,6 +19,7 @@ interface VisionData {
   aa: string;
   blurPoint: string;
   addValue: string;
+  addType: 'plus' | 'minus';
   distance: {
     phoriaValue: string;
     phoriaType: 'exo' | 'eso' | 'ortho';
@@ -53,6 +54,7 @@ const getInitialData = (): VisionData => ({
   aa: '',
   blurPoint: '',
   addValue: '',
+  addType: 'plus',
   distance: {
     phoriaValue: '',
     phoriaType: 'ortho',
@@ -269,9 +271,9 @@ const calculateDysfunctionType = (data: VisionData) => {
       } else {
         // AA Normal
         if (data.near.nraValue !== '' && nra < 1.50) {
-          accDiagnosis = "調節過多";
+          accDiagnosis = "調節過度 (AcE)";
         } else {
-          accDiagnosis = "調節過多 (近用過度使用暫時現象)";
+          accDiagnosis = "調節超前（近用過度使用短暫現象）";
         }
       }
     } else if (isFCCNormal) {
@@ -437,10 +439,17 @@ const ComprehensiveAnalysis = ({ data }: { data: VisionData }) => {
         type: "warning"
       };
     }
-    if (diagnosis.includes("調節過多") || diagnosis.includes("調節過度")) {
+    if (diagnosis.includes("調節過度")) {
       return {
         symptoms: "畏光；長時間看近後遠近均模糊（晚上明顯）；近距工作後頭痛、眼脹；疲勞後遠近切換困難",
         treatment: "1.屈光矯正 2.加入正度數",
+        type: "primary"
+      };
+    }
+    if (diagnosis.includes("調節超前")) {
+      return {
+        symptoms: "常時間看近後容易短暫看遠模糊。看近疲勞，遠近切換困難",
+        treatment: "1.屈光矯正 2.加入正度數 3.多休息",
         type: "primary"
       };
     }
@@ -833,7 +842,8 @@ export default function App() {
       
       if (aaInputMode === 'push-up' || aaInputMode === 'push-up-add') {
         const cm = parseFloat(prev.blurPoint);
-        const add = aaInputMode === 'push-up-add' ? (parseFloat(prev.addValue) || 0) : 0;
+        const addRaw = aaInputMode === 'push-up-add' ? (parseFloat(prev.addValue) || 0) : 0;
+        const add = addRaw * (prev.addType === 'minus' ? -1 : 1);
         if (!isNaN(cm) && cm > 0) {
           newData.aa = (100 / cm - add).toFixed(2);
         }
@@ -872,11 +882,15 @@ export default function App() {
         const newData = { ...prev, [field]: finalValue };
         
         // Auto-calculate AA from Blur Point (Push-up methods)
-        if ((field === 'blurPoint' || field === 'addValue') && (aaInputMode === 'push-up' || aaInputMode === 'push-up-add')) {
+        if ((field === 'blurPoint' || field === 'addValue' || field === 'addType') && (aaInputMode === 'push-up' || aaInputMode === 'push-up-add')) {
           const cm = parseFloat(field === 'blurPoint' ? finalValue : prev.blurPoint);
-          const add = aaInputMode === 'push-up-add' 
-            ? (parseFloat(field === 'addValue' ? finalValue : prev.addValue) || 0)
+          const addValRaw = field === 'addValue' ? finalValue : prev.addValue;
+          const addTypeRaw = field === 'addType' ? finalValue : prev.addType;
+          
+          const addRaw = aaInputMode === 'push-up-add' 
+            ? (parseFloat(addValRaw) || 0)
             : 0;
+          const add = addRaw * (addTypeRaw === 'minus' ? -1 : 1);
             
           if (!isNaN(cm) && cm > 0) {
             newData.aa = (100 / cm - add).toFixed(2);
@@ -1202,7 +1216,10 @@ export default function App() {
                       <td className="p-3 border-r border-gray-100 text-gray-500 text-xs">
                         NRA {`<`} +1.50 ?
                       </td>
-                      <td className="p-3 font-black text-emerald-600 bg-emerald-50/10 text-xs">調節過多 (AcE)</td>
+                      <td className="p-3 font-black text-xs">
+                        <div className="text-emerald-600">YES → 調節過度 (AcE)</div>
+                        <div className="text-blue-500">NO → 調節超前 (短暫現象)</div>
+                      </td>
                     </tr>
 
                     {/* Branch: FCC Normal */}
@@ -1438,10 +1455,17 @@ export default function App() {
                         </td>
                       </tr>
                       <tr className="border-b border-gray-50">
-                        <td className="p-3 font-bold text-indigo-600 bg-indigo-50/10">調節過多 (AcE)</td>
+                        <td className="p-3 font-bold text-indigo-600 bg-indigo-50/10">調節過度 (AcE)</td>
                         <td className="p-3 text-gray-500">
                           <div className="font-bold text-gray-700 mb-1">症狀：畏光、遠近均模糊(晚上明顯)、眼脹、切換困難</div>
                           <div className="text-indigo-700 font-black">處理：屈光矯正、加入正度數</div>
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50">
+                        <td className="p-3 font-bold text-blue-600 bg-blue-50/10">調節超前</td>
+                        <td className="p-3 text-gray-500">
+                          <div className="font-bold text-gray-700 mb-1">症狀：長時間看近後短暫看遠模糊、看近疲勞、遠近切換困難</div>
+                          <div className="text-blue-700 font-black">處理：屈光矯正、加入正度數、多休息</div>
                         </td>
                       </tr>
                     </tbody>
@@ -1683,18 +1707,27 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-xs text-gray-500 font-medium">加入 ADD</span>
-                    <div className="relative">
-                      <input
-                        id="near-add"
-                        type="text"
-                        value={data.addValue}
-                        onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, 'near-add')}
-                        placeholder="0.00"
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleInputChange('general', 'addType', data.addType === 'plus' ? 'minus' : 'plus')}
                         disabled={aaInputMode !== 'push-up-add'}
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                        className="px-3 py-2 bg-gray-100 text-blue-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-200 transition-all min-w-[40px] disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {data.addType === 'plus' ? '+' : '-'}
+                      </button>
+                      <div className="relative flex-1">
+                        <input
+                          id="near-add"
+                          type="text"
+                          value={data.addValue}
+                          onChange={(e) => handleInputChange('general', 'addValue', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, 'near-add')}
+                          placeholder="0.00"
+                          disabled={aaInputMode !== 'push-up-add'}
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono placeholder:text-gray-400 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">D</span>
+                      </div>
                     </div>
                   </div>
                   {aaInputMode === 'push-up' || aaInputMode === 'push-up-add' ? (
